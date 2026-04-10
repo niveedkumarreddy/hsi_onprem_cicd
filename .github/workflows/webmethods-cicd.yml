@@ -47,30 +47,37 @@ jobs:
       
       - name: Set Build Information
         id: build-info
+        shell: pwsh
         run: |
-          BUILD_NUM="${{ github.run_number }}"
-          COMMIT_SHA="${GITHUB_SHA:0:7}"
-          echo "build-number=${BUILD_NUM}" >> $GITHUB_OUTPUT
-          echo "commit-sha=${COMMIT_SHA}" >> $GITHUB_OUTPUT
-          echo "fbr-path=tmp/fbr/${PROJECT_NAME}_${BUILD_NUM}" >> $GITHUB_OUTPUT
-          echo "### Build Information" >> $GITHUB_STEP_SUMMARY
-          echo "- Build Number: ${BUILD_NUM}" >> $GITHUB_STEP_SUMMARY
-          echo "- Commit: ${COMMIT_SHA}" >> $GITHUB_STEP_SUMMARY
-          echo "- Branch: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Triggered by: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          $BUILD_NUM = "${{ github.run_number }}"
+          $COMMIT_SHA = "${{ github.sha }}".Substring(0,7)
+          "build-number=$BUILD_NUM" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "commit-sha=$COMMIT_SHA" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "fbr-path=tmp/fbr/$env:PROJECT_NAME`_$BUILD_NUM" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "### Build Information" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          "- Build Number: $BUILD_NUM" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          "- Commit: $COMMIT_SHA" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          "- Branch: ${{ github.ref_name }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          "- Triggered by: ${{ github.actor }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
       
       - name: Setup Build Environment
+        shell: pwsh
         run: |
-          echo "Setting up build directories..."
-          mkdir -p build tmp/fbr report
-          echo "Validating SAG_HOME: ${SAG_HOME}"
-          ls -la ${SAG_HOME}/common/AssetBuildEnvironment || echo "ABE not found!"
+          Write-Host "Setting up build directories..."
+          New-Item -ItemType Directory -Force -Path build,tmp/fbr,report | Out-Null
+          Write-Host "Validating SAG_HOME: $env:SAG_HOME"
+          if (Test-Path "$env:SAG_HOME/common/AssetBuildEnvironment") {
+            Get-ChildItem "$env:SAG_HOME/common/AssetBuildEnvironment"
+          } else {
+            Write-Host "ABE not found!"
+          }
       
       - name: Prepare Build Properties
+        shell: pwsh
         run: |
-          cat > build.properties << EOF
+          @"
           # Build Configuration
-          bda.projectName=${PROJECT_NAME}
+          bda.projectName=$env:PROJECT_NAME
           bda.buildNumber=${{ github.run_number }}
           
           # Source Locations
@@ -80,44 +87,46 @@ jobs:
           # Build Output
           config.tmpdir=tmp
           config.build.buildStorageDir=tmp/fbr
-          fbrRepoName=${PROJECT_NAME}_${{ github.run_number }}
-          fbrRepoDir=tmp/fbr/${PROJECT_NAME}_${{ github.run_number }}
+          fbrRepoName=$env:PROJECT_NAME`_${{ github.run_number }}
+          fbrRepoDir=tmp/fbr/$env:PROJECT_NAME`_${{ github.run_number }}
           
           # ABE Configuration
-          config.build.abeHome=${SAG_HOME}/common/AssetBuildEnvironment
+          config.build.abeHome=$env:SAG_HOME/common/AssetBuildEnvironment
           
           # Environment Definition
           environmentsDefinition=${{ github.workspace }}/ENV.groovy
-          EOF
+          "@ | Out-File -FilePath build.properties -Encoding UTF8
           
-          echo "Build properties created:"
-          cat build.properties
+          Write-Host "Build properties created:"
+          Get-Content build.properties
       
       - name: Build with Asset Build Environment
+        shell: pwsh
         run: |
-          cd ${CICD_HOME}
-          echo "Starting ABE build..."
-          ant -f build.xml build \
-            -Dproject.properties=${{ github.workspace }}/build.properties \
+          Set-Location $env:CICD_HOME
+          Write-Host "Starting ABE build..."
+          ant -f build.xml build `
+            -Dproject.properties="${{ github.workspace }}/build.properties" `
             -verbose
           
-          echo "Build completed. Checking output..."
-          ls -la ${{ github.workspace }}/tmp/fbr/
+          Write-Host "Build completed. Checking output..."
+          Get-ChildItem "${{ github.workspace }}/tmp/fbr/"
       
       - name: Validate Build Output
+        shell: pwsh
         run: |
-          FBR_DIR="${{ github.workspace }}/tmp/fbr/${PROJECT_NAME}_${{ github.run_number }}"
-          if [ ! -d "${FBR_DIR}" ]; then
-            echo "ERROR: Build output directory not found: ${FBR_DIR}"
+          $FBR_DIR = "${{ github.workspace }}/tmp/fbr/$env:PROJECT_NAME`_${{ github.run_number }}"
+          if (-not (Test-Path $FBR_DIR)) {
+            Write-Error "ERROR: Build output directory not found: $FBR_DIR"
             exit 1
-          fi
+          }
           
-          echo "Build artifacts found:"
-          find ${FBR_DIR} -type f | head -20
+          Write-Host "Build artifacts found:"
+          Get-ChildItem -Path $FBR_DIR -Recurse -File | Select-Object -First 20 | ForEach-Object { $_.FullName }
           
           # Count artifacts
-          ARTIFACT_COUNT=$(find ${FBR_DIR} -type f | wc -l)
-          echo "Total artifacts: ${ARTIFACT_COUNT}" >> $GITHUB_STEP_SUMMARY
+          $ARTIFACT_COUNT = (Get-ChildItem -Path $FBR_DIR -Recurse -File).Count
+          "Total artifacts: $ARTIFACT_COUNT" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
       
       - name: Archive Build Artifacts
         uses: actions/upload-artifact@v4
@@ -130,18 +139,20 @@ jobs:
           compression-level: 6
       
       - name: Generate Build Manifest
+        shell: pwsh
         run: |
-          cat > build-manifest.json << EOF
+          $timestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+          @"
           {
             "buildNumber": "${{ github.run_number }}",
             "commitSha": "${{ github.sha }}",
             "branch": "${{ github.ref_name }}",
-            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "timestamp": "$timestamp",
             "triggeredBy": "${{ github.actor }}",
-            "fbrPath": "tmp/fbr/${PROJECT_NAME}_${{ github.run_number }}"
+            "fbrPath": "tmp/fbr/$env:PROJECT_NAME`_${{ github.run_number }}"
           }
-          EOF
-          cat build-manifest.json
+          "@ | Out-File -FilePath build-manifest.json -Encoding UTF8
+          Get-Content build-manifest.json
 
   deploy-dev:
     name: Deploy to DEV
@@ -163,19 +174,20 @@ jobs:
           path: .
       
       - name: Prepare Deployment Configuration
+        shell: pwsh
         run: |
-          cat > deploy.properties << EOF
+          @"
           # Deployment Configuration for DEV
           bda.targetEnv=DEV
-          bda.projectName=${PROJECT_NAME}
+          bda.projectName=$env:PROJECT_NAME
           bda.buildNumber=${{ github.run_number }}
           
           # Repository Configuration
-          fbrRepoName=${PROJECT_NAME}_${{ github.run_number }}
-          fbrRepoDir=${{ github.workspace }}/tmp/fbr/${PROJECT_NAME}_${{ github.run_number }}
+          fbrRepoName=$env:PROJECT_NAME`_${{ github.run_number }}
+          fbrRepoDir=${{ github.workspace }}/tmp/fbr/$env:PROJECT_NAME`_${{ github.run_number }}
           
           # Deployer Configuration
-          config.deployer.deployerInstallationPath=${SAG_HOME}/IntegrationServer/instances/default/packages/WmDeployer/bin
+          config.deployer.deployerInstallationPath=$env:SAG_HOME/IntegrationServer/instances/default/packages/WmDeployer/bin
           config.deployer.deployerHost=${{ secrets.DEPLOYER_HOST }}
           config.deployer.deployerPort=${{ secrets.DEPLOYER_PORT }}
           config.deployer.deployerUsername=${{ secrets.DEPLOYER_USERNAME }}
@@ -192,29 +204,31 @@ jobs:
           
           # Temp Directory
           config.tmpdir=tmp
-          EOF
+          "@ | Out-File -FilePath deploy.properties -Encoding UTF8
           
-          echo "Deployment configuration:"
-          cat deploy.properties
+          Write-Host "Deployment configuration:"
+          Get-Content deploy.properties
       
       - name: Deploy to DEV Server
+        shell: pwsh
         env:
           DEPLOYER_HOST: ${{ secrets.DEPLOYER_HOST }}
           DEPLOYER_PORT: ${{ secrets.DEPLOYER_PORT }}
         run: |
-          cd ${CICD_HOME}
-          echo "Starting deployment to DEV..."
+          Set-Location $env:CICD_HOME
+          Write-Host "Starting deployment to DEV..."
           
-          ant -f build.xml deploy \
-            -Dproject.properties=${{ github.workspace }}/deploy.properties \
+          ant -f build.xml deploy `
+            -Dproject.properties="${{ github.workspace }}/deploy.properties" `
             -verbose
           
-          echo "✅ Deployment to DEV completed" >> $GITHUB_STEP_SUMMARY
+          "✅ Deployment to DEV completed" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
       
       - name: Verify Deployment
+        shell: pwsh
         run: |
-          echo "Verifying deployment on dev-server.company.com:5555..."
-          echo "Deployment verification completed" >> $GITHUB_STEP_SUMMARY
+          Write-Host "Verifying deployment on dev-server.company.com:5555..."
+          "Deployment verification completed" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
 
   test-dev:
     name: Test on DEV
@@ -227,25 +241,28 @@ jobs:
         uses: actions/checkout@v4
       
       - name: Prepare Test Configuration
+        shell: pwsh
         run: |
-          cat > test.properties << EOF
+          @"
           bda.targetEnv=DEV
-          bda.projectName=${PROJECT_NAME}
+          bda.projectName=$env:PROJECT_NAME
           isTestDir=${{ github.workspace }}/tests
           config.test.reportDir=${{ github.workspace }}/report
           config.test.failBuildOnTestError=true
           environmentsDefinition=${{ github.workspace }}/ENV.groovy
-          config.build.abeHome=${SAG_HOME}/common/AssetBuildEnvironment
-          EOF
+          config.build.abeHome=$env:SAG_HOME/common/AssetBuildEnvironment
+          "@ | Out-File -FilePath test.properties -Encoding UTF8
       
       - name: Run WmTestSuite Tests
+        shell: pwsh
         run: |
-          cd ${CICD_HOME}
-          echo "Running tests on DEV environment..."
+          Set-Location $env:CICD_HOME
+          Write-Host "Running tests on DEV environment..."
           
-          ant -f build.xml test \
-            -Dproject.properties=${{ github.workspace }}/test.properties \
-            -verbose || echo "Some tests failed"
+          ant -f build.xml test `
+            -Dproject.properties="${{ github.workspace }}/test.properties" `
+            -verbose
+          if ($LASTEXITCODE -ne 0) { Write-Host "Some tests failed" }
       
       - name: Publish Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
@@ -288,14 +305,15 @@ jobs:
           path: .
       
       - name: Deploy to TEST-${{ matrix.server }}
+        shell: pwsh
         run: |
-          cat > deploy-test-${{ matrix.server }}.properties << EOF
+          @"
           bda.targetEnv=TEST
-          bda.projectName=${PROJECT_NAME}
+          bda.projectName=$env:PROJECT_NAME
           bda.buildNumber=${{ github.run_number }}
-          fbrRepoName=${PROJECT_NAME}_${{ github.run_number }}
-          fbrRepoDir=${{ github.workspace }}/tmp/fbr/${PROJECT_NAME}_${{ github.run_number }}
-          config.deployer.deployerInstallationPath=${SAG_HOME}/IntegrationServer/instances/default/packages/WmDeployer/bin
+          fbrRepoName=$env:PROJECT_NAME`_${{ github.run_number }}
+          fbrRepoDir=${{ github.workspace }}/tmp/fbr/$env:PROJECT_NAME`_${{ github.run_number }}
+          config.deployer.deployerInstallationPath=$env:SAG_HOME/IntegrationServer/instances/default/packages/WmDeployer/bin
           config.deployer.deployerHost=${{ secrets.DEPLOYER_HOST }}
           config.deployer.deployerPort=${{ secrets.DEPLOYER_PORT }}
           config.deployer.deployerUsername=${{ secrets.DEPLOYER_USERNAME }}
@@ -305,16 +323,16 @@ jobs:
           varsubDir=${{ github.workspace }}/varsub
           environmentsDefinition=${{ github.workspace }}/ENV.groovy
           config.tmpdir=tmp
-          EOF
+          "@ | Out-File -FilePath deploy-test-${{ matrix.server }}.properties -Encoding UTF8
           
-          cd ${CICD_HOME}
-          echo "Deploying to ${{ matrix.server }}-server.company.com:5555..."
+          Set-Location $env:CICD_HOME
+          Write-Host "Deploying to ${{ matrix.server }}-server.company.com:5555..."
           
-          ant -f build.xml deploy \
-            -Dproject.properties=${{ github.workspace }}/deploy-test-${{ matrix.server }}.properties \
+          ant -f build.xml deploy `
+            -Dproject.properties="${{ github.workspace }}/deploy-test-${{ matrix.server }}.properties" `
             -verbose
           
-          echo "✅ Deployed to TEST-${{ matrix.server }}" >> $GITHUB_STEP_SUMMARY
+          "✅ Deployed to TEST-${{ matrix.server }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
 
   test-test:
     name: Test on TEST
@@ -327,20 +345,21 @@ jobs:
         uses: actions/checkout@v4
       
       - name: Run Tests on TEST
+        shell: pwsh
         run: |
-          cat > test-test.properties << EOF
+          @"
           bda.targetEnv=TEST
-          bda.projectName=${PROJECT_NAME}
+          bda.projectName=$env:PROJECT_NAME
           isTestDir=${{ github.workspace }}/tests
           config.test.reportDir=${{ github.workspace }}/report
           config.test.failBuildOnTestError=true
           environmentsDefinition=${{ github.workspace }}/ENV.groovy
-          config.build.abeHome=${SAG_HOME}/common/AssetBuildEnvironment
-          EOF
+          config.build.abeHome=$env:SAG_HOME/common/AssetBuildEnvironment
+          "@ | Out-File -FilePath test-test.properties -Encoding UTF8
           
-          cd ${CICD_HOME}
-          ant -f build.xml test \
-            -Dproject.properties=${{ github.workspace }}/test-test.properties
+          Set-Location $env:CICD_HOME
+          ant -f build.xml test `
+            -Dproject.properties="${{ github.workspace }}/test-test.properties"
       
       - name: Publish Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
@@ -381,19 +400,21 @@ jobs:
           path: .
       
       - name: Pre-Deployment Backup
+        shell: pwsh
         run: |
-          echo "Creating backup of ${{ matrix.server }}-server.company.com..."
-          echo "Backup completed for PROD-${{ matrix.server }}" >> $GITHUB_STEP_SUMMARY
+          Write-Host "Creating backup of ${{ matrix.server }}-server.company.com..."
+          "Backup completed for PROD-${{ matrix.server }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
       
       - name: Deploy to PROD-${{ matrix.server }}
+        shell: pwsh
         run: |
-          cat > deploy-prod-${{ matrix.server }}.properties << EOF
+          @"
           bda.targetEnv=PROD
-          bda.projectName=${PROJECT_NAME}
+          bda.projectName=$env:PROJECT_NAME
           bda.buildNumber=${{ github.run_number }}
-          fbrRepoName=${PROJECT_NAME}_${{ github.run_number }}
-          fbrRepoDir=${{ github.workspace }}/tmp/fbr/${PROJECT_NAME}_${{ github.run_number }}
-          config.deployer.deployerInstallationPath=${SAG_HOME}/IntegrationServer/instances/default/packages/WmDeployer/bin
+          fbrRepoName=$env:PROJECT_NAME`_${{ github.run_number }}
+          fbrRepoDir=${{ github.workspace }}/tmp/fbr/$env:PROJECT_NAME`_${{ github.run_number }}
+          config.deployer.deployerInstallationPath=$env:SAG_HOME/IntegrationServer/instances/default/packages/WmDeployer/bin
           config.deployer.deployerHost=${{ secrets.DEPLOYER_HOST }}
           config.deployer.deployerPort=${{ secrets.DEPLOYER_PORT }}
           config.deployer.deployerUsername=${{ secrets.DEPLOYER_USERNAME }}
@@ -403,27 +424,29 @@ jobs:
           varsubDir=${{ github.workspace }}/varsub
           environmentsDefinition=${{ github.workspace }}/ENV.groovy
           config.tmpdir=tmp
-          EOF
+          "@ | Out-File -FilePath deploy-prod-${{ matrix.server }}.properties -Encoding UTF8
           
-          cd ${CICD_HOME}
-          echo "Deploying to ${{ matrix.server }}-server.company.com:5555..."
+          Set-Location $env:CICD_HOME
+          Write-Host "Deploying to ${{ matrix.server }}-server.company.com:5555..."
           
-          ant -f build.xml deploy \
-            -Dproject.properties=${{ github.workspace }}/deploy-prod-${{ matrix.server }}.properties \
+          ant -f build.xml deploy `
+            -Dproject.properties="${{ github.workspace }}/deploy-prod-${{ matrix.server }}.properties" `
             -verbose
           
-          echo "✅ Deployed to PROD-${{ matrix.server }}" >> $GITHUB_STEP_SUMMARY
+          "✅ Deployed to PROD-${{ matrix.server }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
       
       - name: Post-Deployment Verification
+        shell: pwsh
         run: |
-          echo "Verifying deployment on ${{ matrix.server }}-server.company.com..."
-          echo "Verification completed for PROD-${{ matrix.server }}" >> $GITHUB_STEP_SUMMARY
+          Write-Host "Verifying deployment on ${{ matrix.server }}-server.company.com..."
+          "Verification completed for PROD-${{ matrix.server }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
       
       - name: Wait Between Servers
         if: matrix.server != 'prod3'
+        shell: pwsh
         run: |
-          echo "Waiting 2 minutes before next server deployment..."
-          sleep 120
+          Write-Host "Waiting 2 minutes before next server deployment..."
+          Start-Sleep -Seconds 120
 
   create-release:
     name: Create GitHub Release

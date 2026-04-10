@@ -89,30 +89,34 @@ jobs:
       
       - name: Check Artifacts Availability
         id: check-artifacts
+        shell: pwsh
         run: |
-          if [ ! -d "tmp/fbr" ]; then
-            echo "❌ Build artifacts not found for build ${{ github.event.inputs.build_number }}"
-            echo "Artifacts may have expired (30-day retention)"
+          if (-not (Test-Path "tmp/fbr")) {
+            Write-Host "❌ Build artifacts not found for build ${{ github.event.inputs.build_number }}"
+            Write-Host "Artifacts may have expired (30-day retention)"
             exit 1
-          fi
-          echo "✅ Build artifacts found"
+          }
+          Write-Host "✅ Build artifacts found"
       
       - name: Create Backup Before Rollback
+        shell: pwsh
         run: |
-          BACKUP_DIR="backups/pre-rollback-$(date +%Y%m%d-%H%M%S)"
-          mkdir -p ${BACKUP_DIR}
-          echo "Creating backup in ${BACKUP_DIR}..."
-          echo "Backup created for ${{ matrix.server }}" >> $GITHUB_STEP_SUMMARY
+          $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
+          $BACKUP_DIR = "backups/pre-rollback-$timestamp"
+          New-Item -ItemType Directory -Force -Path $BACKUP_DIR | Out-Null
+          Write-Host "Creating backup in $BACKUP_DIR..."
+          "Backup created for ${{ matrix.server }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
       
       - name: Rollback TEST-${{ matrix.server }}
+        shell: pwsh
         run: |
-          cat > rollback-test-${{ matrix.server }}.properties << EOF
+          @"
           bda.targetEnv=TEST
-          bda.projectName=${PROJECT_NAME}
+          bda.projectName=$env:PROJECT_NAME
           bda.buildNumber=${{ github.event.inputs.build_number }}
-          fbrRepoName=${PROJECT_NAME}_${{ github.event.inputs.build_number }}
-          fbrRepoDir=${{ github.workspace }}/tmp/fbr/${PROJECT_NAME}_${{ github.event.inputs.build_number }}
-          config.deployer.deployerInstallationPath=${SAG_HOME}/IntegrationServer/instances/default/packages/WmDeployer/bin
+          fbrRepoName=$env:PROJECT_NAME`_${{ github.event.inputs.build_number }}
+          fbrRepoDir=${{ github.workspace }}/tmp/fbr/$env:PROJECT_NAME`_${{ github.event.inputs.build_number }}
+          config.deployer.deployerInstallationPath=$env:SAG_HOME/IntegrationServer/instances/default/packages/WmDeployer/bin
           config.deployer.deployerHost=${{ secrets.DEPLOYER_HOST }}
           config.deployer.deployerPort=${{ secrets.DEPLOYER_PORT }}
           config.deployer.deployerUsername=${{ secrets.DEPLOYER_USERNAME }}
@@ -122,28 +126,30 @@ jobs:
           varsubDir=${{ github.workspace }}/varsub
           environmentsDefinition=${{ github.workspace }}/ENV.groovy
           config.tmpdir=tmp
-          EOF
+          "@ | Out-File -FilePath rollback-test-${{ matrix.server }}.properties -Encoding UTF8
           
-          cd ${CICD_HOME}
-          echo "Rolling back ${{ matrix.server }}-server.company.com to build ${{ github.event.inputs.build_number }}..."
+          Set-Location $env:CICD_HOME
+          Write-Host "Rolling back ${{ matrix.server }}-server.company.com to build ${{ github.event.inputs.build_number }}..."
           
-          ant -f build.xml deploy \
-            -Dproject.properties=${{ github.workspace }}/rollback-test-${{ matrix.server }}.properties \
+          ant -f build.xml deploy `
+            -Dproject.properties="${{ github.workspace }}/rollback-test-${{ matrix.server }}.properties" `
             -verbose
           
-          echo "✅ Rolled back TEST-${{ matrix.server }} to build ${{ github.event.inputs.build_number }}" >> $GITHUB_STEP_SUMMARY
+          "✅ Rolled back TEST-${{ matrix.server }} to build ${{ github.event.inputs.build_number }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
       
       - name: Verify Rollback
+        shell: pwsh
         run: |
-          echo "Verifying rollback on ${{ matrix.server }}-server.company.com..."
+          Write-Host "Verifying rollback on ${{ matrix.server }}-server.company.com..."
           # Add verification logic here
-          echo "Rollback verification completed for TEST-${{ matrix.server }}" >> $GITHUB_STEP_SUMMARY
+          "Rollback verification completed for TEST-${{ matrix.server }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
       
       - name: Wait Between Servers
         if: matrix.server != 'test3'
+        shell: pwsh
         run: |
-          echo "Waiting 1 minute before next server rollback..."
-          sleep 60
+          Write-Host "Waiting 1 minute before next server rollback..."
+          Start-Sleep -Seconds 60
 
   rollback-prod:
     name: Rollback PROD Environment
@@ -172,30 +178,34 @@ jobs:
       
       - name: Check Artifacts Availability
         id: check-artifacts
+        shell: pwsh
         run: |
-          if [ ! -d "tmp/fbr" ]; then
-            echo "❌ Build artifacts not found for build ${{ github.event.inputs.build_number }}"
-            echo "Artifacts may have expired (30-day retention)"
+          if (-not (Test-Path "tmp/fbr")) {
+            Write-Host "❌ Build artifacts not found for build ${{ github.event.inputs.build_number }}"
+            Write-Host "Artifacts may have expired (30-day retention)"
             exit 1
-          fi
-          echo "✅ Build artifacts found"
+          }
+          Write-Host "✅ Build artifacts found"
       
       - name: Create Critical Backup Before Rollback
+        shell: pwsh
         run: |
-          BACKUP_DIR="backups/pre-rollback-prod-$(date +%Y%m%d-%H%M%S)"
-          mkdir -p ${BACKUP_DIR}
-          echo "Creating CRITICAL backup in ${BACKUP_DIR}..."
-          echo "⚠️ CRITICAL: Backup created for PROD-${{ matrix.server }}" >> $GITHUB_STEP_SUMMARY
+          $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
+          $BACKUP_DIR = "backups/pre-rollback-prod-$timestamp"
+          New-Item -ItemType Directory -Force -Path $BACKUP_DIR | Out-Null
+          Write-Host "Creating CRITICAL backup in $BACKUP_DIR..."
+          "⚠️ CRITICAL: Backup created for PROD-${{ matrix.server }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
       
       - name: Rollback PROD-${{ matrix.server }}
+        shell: pwsh
         run: |
-          cat > rollback-prod-${{ matrix.server }}.properties << EOF
+          @"
           bda.targetEnv=PROD
-          bda.projectName=${PROJECT_NAME}
+          bda.projectName=$env:PROJECT_NAME
           bda.buildNumber=${{ github.event.inputs.build_number }}
-          fbrRepoName=${PROJECT_NAME}_${{ github.event.inputs.build_number }}
-          fbrRepoDir=${{ github.workspace }}/tmp/fbr/${PROJECT_NAME}_${{ github.event.inputs.build_number }}
-          config.deployer.deployerInstallationPath=${SAG_HOME}/IntegrationServer/instances/default/packages/WmDeployer/bin
+          fbrRepoName=$env:PROJECT_NAME`_${{ github.event.inputs.build_number }}
+          fbrRepoDir=${{ github.workspace }}/tmp/fbr/$env:PROJECT_NAME`_${{ github.event.inputs.build_number }}
+          config.deployer.deployerInstallationPath=$env:SAG_HOME/IntegrationServer/instances/default/packages/WmDeployer/bin
           config.deployer.deployerHost=${{ secrets.DEPLOYER_HOST }}
           config.deployer.deployerPort=${{ secrets.DEPLOYER_PORT }}
           config.deployer.deployerUsername=${{ secrets.DEPLOYER_USERNAME }}
@@ -205,28 +215,30 @@ jobs:
           varsubDir=${{ github.workspace }}/varsub
           environmentsDefinition=${{ github.workspace }}/ENV.groovy
           config.tmpdir=tmp
-          EOF
+          "@ | Out-File -FilePath rollback-prod-${{ matrix.server }}.properties -Encoding UTF8
           
-          cd ${CICD_HOME}
-          echo "⚠️ Rolling back PRODUCTION ${{ matrix.server }}-server.company.com to build ${{ github.event.inputs.build_number }}..."
+          Set-Location $env:CICD_HOME
+          Write-Host "⚠️ Rolling back PRODUCTION ${{ matrix.server }}-server.company.com to build ${{ github.event.inputs.build_number }}..."
           
-          ant -f build.xml deploy \
-            -Dproject.properties=${{ github.workspace }}/rollback-prod-${{ matrix.server }}.properties \
+          ant -f build.xml deploy `
+            -Dproject.properties="${{ github.workspace }}/rollback-prod-${{ matrix.server }}.properties" `
             -verbose
           
-          echo "✅ Rolled back PROD-${{ matrix.server }} to build ${{ github.event.inputs.build_number }}" >> $GITHUB_STEP_SUMMARY
+          "✅ Rolled back PROD-${{ matrix.server }} to build ${{ github.event.inputs.build_number }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
       
       - name: Verify Rollback
+        shell: pwsh
         run: |
-          echo "Verifying rollback on ${{ matrix.server }}-server.company.com..."
+          Write-Host "Verifying rollback on ${{ matrix.server }}-server.company.com..."
           # Add verification logic here
-          echo "Rollback verification completed for PROD-${{ matrix.server }}" >> $GITHUB_STEP_SUMMARY
+          "Rollback verification completed for PROD-${{ matrix.server }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
       
       - name: Wait Between Servers
         if: matrix.server != 'prod3'
+        shell: pwsh
         run: |
-          echo "Waiting 2 minutes before next server rollback..."
-          sleep 120
+          Write-Host "Waiting 2 minutes before next server rollback..."
+          Start-Sleep -Seconds 120
 
   post-rollback-tests:
     name: Post-Rollback Verification Tests
@@ -239,23 +251,25 @@ jobs:
         uses: actions/checkout@v4
       
       - name: Run Smoke Tests
+        shell: pwsh
         run: |
-          cat > test-rollback.properties << EOF
+          @"
           bda.targetEnv=${{ github.event.inputs.environment }}
-          bda.projectName=${PROJECT_NAME}
+          bda.projectName=$env:PROJECT_NAME
           isTestDir=${{ github.workspace }}/tests
           config.test.reportDir=${{ github.workspace }}/report
           config.test.failBuildOnTestError=false
           environmentsDefinition=${{ github.workspace }}/ENV.groovy
-          config.build.abeHome=${SAG_HOME}/common/AssetBuildEnvironment
-          EOF
+          config.build.abeHome=$env:SAG_HOME/common/AssetBuildEnvironment
+          "@ | Out-File -FilePath test-rollback.properties -Encoding UTF8
           
-          cd ${CICD_HOME}
-          echo "Running post-rollback verification tests..."
+          Set-Location $env:CICD_HOME
+          Write-Host "Running post-rollback verification tests..."
           
-          ant -f build.xml test \
-            -Dproject.properties=${{ github.workspace }}/test-rollback.properties \
-            -verbose || echo "Some tests failed"
+          ant -f build.xml test `
+            -Dproject.properties="${{ github.workspace }}/test-rollback.properties" `
+            -verbose
+          if ($LASTEXITCODE -ne 0) { Write-Host "Some tests failed" }
       
       - name: Publish Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
