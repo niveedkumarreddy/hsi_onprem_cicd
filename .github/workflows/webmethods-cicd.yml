@@ -75,26 +75,29 @@ jobs:
       - name: Prepare Build Properties
         shell: powershell
         run: |
+          # Use PowerShell to convert paths to Windows format
+          $WORKSPACE = "${{ github.workspace }}".Replace('/', '\')
+          
           @"
           # Build Configuration
           bda.projectName=$env:PROJECT_NAME
           bda.buildNumber=${{ github.run_number }}
           
           # Source Locations
-          isPackagesDir=${{ github.workspace }}/packages
-          isTestDir=${{ github.workspace }}/tests
+          isPackagesDir=$WORKSPACE\packages
+          isTestDir=$WORKSPACE\tests
           
-          # Build Output - Use absolute paths within workspace
-          config.tmpdir=${{ github.workspace }}/tmp
-          config.build.buildStorageDir=${{ github.workspace }}/build
+          # Build Output
+          config.tmpdir=$WORKSPACE\tmp
+          config.build.buildStorageDir=$WORKSPACE\build
           fbrRepoName=$env:PROJECT_NAME`_${{ github.run_number }}
-          fbrRepoDir=${{ github.workspace }}/build
+          fbrRepoDir=$WORKSPACE\build
           
           # ABE Configuration
-          config.build.abeHome=$env:SAG_HOME/common/AssetBuildEnvironment
+          config.build.abeHome=$env:SAG_HOME\common\AssetBuildEnvironment
           
           # Environment Definition
-          environmentsDefinition=${{ github.workspace }}/ENV.groovy
+          environmentsDefinition=$WORKSPACE\ENV.groovy
           "@ | Out-File -FilePath build.properties -Encoding UTF8
           
           Write-Host "Build properties created:"
