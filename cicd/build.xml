@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project name="webMethods-CICD" default="buildDeployTest" basedir="..">
     
-    <!-- Load properties -->
-    <property file="${basedir}/build.properties"/>
+    <!-- Load properties - use project.properties if specified, otherwise build.properties -->
+    <property name="project.properties" value="${basedir}/build.properties"/>
+    <property file="${project.properties}"/>
     <property name="cicd.home" value="${basedir}/cicd"/>
     
     <!-- Import sub-build files -->
