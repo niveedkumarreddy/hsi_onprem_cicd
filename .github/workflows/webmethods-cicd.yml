@@ -224,6 +224,9 @@ jobs:
           DEPLOYER_HOST: ${{ secrets.DEPLOYER_HOST }}
           DEPLOYER_PORT: ${{ secrets.DEPLOYER_PORT }}
         run: |
+          # Add ANT to PATH
+          $env:PATH = "$env:SAG_HOME/common/lib/ant/bin;$env:PATH"
+          
           Set-Location $env:CICD_HOME
           Write-Host "Starting deployment to DEV..."
           
