@@ -84,11 +84,11 @@ jobs:
           isPackagesDir=${{ github.workspace }}/packages
           isTestDir=${{ github.workspace }}/tests
           
-          # Build Output
-          config.tmpdir=tmp
-          config.build.buildStorageDir=tmp/fbr
+          # Build Output - Use absolute paths within workspace
+          config.tmpdir=${{ github.workspace }}/tmp
+          config.build.buildStorageDir=${{ github.workspace }}/build
           fbrRepoName=$env:PROJECT_NAME`_${{ github.run_number }}
-          fbrRepoDir=tmp/fbr/$env:PROJECT_NAME`_${{ github.run_number }}
+          fbrRepoDir=${{ github.workspace }}/build
           
           # ABE Configuration
           config.build.abeHome=$env:SAG_HOME/common/AssetBuildEnvironment
