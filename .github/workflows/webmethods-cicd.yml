@@ -75,9 +75,9 @@ jobs:
       - name: Prepare Build Properties
         shell: powershell
         run: |
-          # Use PowerShell to convert paths to Windows format
-          $WORKSPACE = "${{ github.workspace }}".Replace('/', '\')
-          $SAG_HOME_WIN = "$env:SAG_HOME".Replace('/', '\')
+          # Use forward slashes - Java/ANT handles them correctly on Windows
+          $WORKSPACE = "${{ github.workspace }}".Replace('\', '/')
+          $SAG_HOME_UNIX = "$env:SAG_HOME".Replace('\', '/')
           
           @"
           # Build Configuration
@@ -85,20 +85,20 @@ jobs:
           bda.buildNumber=${{ github.run_number }}
           
           # Source Locations
-          isPackagesDir=$WORKSPACE\packages
-          isTestDir=$WORKSPACE\tests
+          isPackagesDir=$WORKSPACE/packages
+          isTestDir=$WORKSPACE/tests
           
           # Build Output
-          config.tmpdir=$WORKSPACE\tmp
-          config.build.buildStorageDir=$WORKSPACE\build
+          config.tmpdir=$WORKSPACE/tmp
+          config.build.buildStorageDir=$WORKSPACE/build
           fbrRepoName=$env:PROJECT_NAME`_${{ github.run_number }}
-          fbrRepoDir=$WORKSPACE\build
+          fbrRepoDir=$WORKSPACE/build
           
           # ABE Configuration
-          config.build.abeHome=$SAG_HOME_WIN\common\AssetBuildEnvironment
+          config.build.abeHome=$SAG_HOME_UNIX/common/AssetBuildEnvironment
           
           # Environment Definition
-          environmentsDefinition=$WORKSPACE\ENV.groovy
+          environmentsDefinition=$WORKSPACE/ENV.groovy
           "@ | Out-File -FilePath build.properties -Encoding UTF8
           
           Write-Host "Build properties created:"
