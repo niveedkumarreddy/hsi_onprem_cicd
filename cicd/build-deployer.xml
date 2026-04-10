@@ -17,8 +17,8 @@
         <available file="${config.deployer.deployerInstallationPath}" type="dir" property="deployer.exists"/>
         <fail unless="deployer.exists" message="Deployer not found at: ${config.deployer.deployerInstallationPath}"/>
         
-        <!-- Set Project Automator output file -->
-        <property name="pa.xml.file" value="${config.tmpdir}/ProjectAutomator_${bda.targetEnv}.xml"/>
+        <!-- Set Project Automator output file (use absolute path for PA execution) -->
+        <property name="pa.xml.file" value="${basedir}/${config.tmpdir}/ProjectAutomator_${bda.targetEnv}.xml"/>
         
         <echo message="Deployer initialized"/>
     </target>
