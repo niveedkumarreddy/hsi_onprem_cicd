@@ -110,9 +110,8 @@ jobs:
           Write-Host "Starting ABE build..."
           Write-Host "ANT location: $env:SAG_HOME/common/lib/ant/bin"
           
-          ant -f build.xml build `
-            -Dproject.properties="${{ github.workspace }}/build.properties" `
-            -verbose
+          # ANT will automatically load build.properties from basedir (parent of cicd/)
+          ant -f build.xml build -verbose
           
           Write-Host "Build completed. Checking output..."
           Get-ChildItem "${{ github.workspace }}/tmp/fbr/"
