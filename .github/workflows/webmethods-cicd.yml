@@ -47,7 +47,7 @@ jobs:
       
       - name: Set Build Information
         id: build-info
-        shell: pwsh
+        shell: powershell
         run: |
           $BUILD_NUM = "${{ github.run_number }}"
           $COMMIT_SHA = "${{ github.sha }}".Substring(0,7)
@@ -61,7 +61,7 @@ jobs:
           "- Triggered by: ${{ github.actor }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
       
       - name: Setup Build Environment
-        shell: pwsh
+        shell: powershell
         run: |
           Write-Host "Setting up build directories..."
           New-Item -ItemType Directory -Force -Path build,tmp/fbr,report | Out-Null
@@ -73,7 +73,7 @@ jobs:
           }
       
       - name: Prepare Build Properties
-        shell: pwsh
+        shell: powershell
         run: |
           @"
           # Build Configuration
@@ -101,7 +101,7 @@ jobs:
           Get-Content build.properties
       
       - name: Build with Asset Build Environment
-        shell: pwsh
+        shell: powershell
         run: |
           Set-Location $env:CICD_HOME
           Write-Host "Starting ABE build..."
@@ -113,7 +113,7 @@ jobs:
           Get-ChildItem "${{ github.workspace }}/tmp/fbr/"
       
       - name: Validate Build Output
-        shell: pwsh
+        shell: powershell
         run: |
           $FBR_DIR = "${{ github.workspace }}/tmp/fbr/$env:PROJECT_NAME`_${{ github.run_number }}"
           if (-not (Test-Path $FBR_DIR)) {
@@ -139,7 +139,7 @@ jobs:
           compression-level: 6
       
       - name: Generate Build Manifest
-        shell: pwsh
+        shell: powershell
         run: |
           $timestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
           @"
@@ -174,7 +174,7 @@ jobs:
           path: .
       
       - name: Prepare Deployment Configuration
-        shell: pwsh
+        shell: powershell
         run: |
           @"
           # Deployment Configuration for DEV
@@ -210,7 +210,7 @@ jobs:
           Get-Content deploy.properties
       
       - name: Deploy to DEV Server
-        shell: pwsh
+        shell: powershell
         env:
           DEPLOYER_HOST: ${{ secrets.DEPLOYER_HOST }}
           DEPLOYER_PORT: ${{ secrets.DEPLOYER_PORT }}
@@ -225,7 +225,7 @@ jobs:
           "✅ Deployment to DEV completed" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
       
       - name: Verify Deployment
-        shell: pwsh
+        shell: powershell
         run: |
           Write-Host "Verifying deployment on dev-server.company.com:5555..."
           "Deployment verification completed" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
@@ -241,7 +241,7 @@ jobs:
         uses: actions/checkout@v4
       
       - name: Prepare Test Configuration
-        shell: pwsh
+        shell: powershell
         run: |
           @"
           bda.targetEnv=DEV
@@ -254,7 +254,7 @@ jobs:
           "@ | Out-File -FilePath test.properties -Encoding UTF8
       
       - name: Run WmTestSuite Tests
-        shell: pwsh
+        shell: powershell
         run: |
           Set-Location $env:CICD_HOME
           Write-Host "Running tests on DEV environment..."
@@ -305,7 +305,7 @@ jobs:
           path: .
       
       - name: Deploy to TEST-${{ matrix.server }}
-        shell: pwsh
+        shell: powershell
         run: |
           @"
           bda.targetEnv=TEST
@@ -345,7 +345,7 @@ jobs:
         uses: actions/checkout@v4
       
       - name: Run Tests on TEST
-        shell: pwsh
+        shell: powershell
         run: |
           @"
           bda.targetEnv=TEST
@@ -400,13 +400,13 @@ jobs:
           path: .
       
       - name: Pre-Deployment Backup
-        shell: pwsh
+        shell: powershell
         run: |
           Write-Host "Creating backup of ${{ matrix.server }}-server.company.com..."
           "Backup completed for PROD-${{ matrix.server }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
       
       - name: Deploy to PROD-${{ matrix.server }}
-        shell: pwsh
+        shell: powershell
         run: |
           @"
           bda.targetEnv=PROD
@@ -436,14 +436,14 @@ jobs:
           "✅ Deployed to PROD-${{ matrix.server }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
       
       - name: Post-Deployment Verification
-        shell: pwsh
+        shell: powershell
         run: |
           Write-Host "Verifying deployment on ${{ matrix.server }}-server.company.com..."
           "Verification completed for PROD-${{ matrix.server }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
       
       - name: Wait Between Servers
         if: matrix.server != 'prod3'
-        shell: pwsh
+        shell: powershell
         run: |
           Write-Host "Waiting 2 minutes before next server deployment..."
           Start-Sleep -Seconds 120
