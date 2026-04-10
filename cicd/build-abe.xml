@@ -49,21 +49,21 @@
         <echo message="Output directory: ${fbrRepoDir}"/>
         
         <!-- Call ABE -->
-        <exec executable="${config.build.abeHome}/bin/build.bat" 
-              dir="${config.build.abeHome}" 
+        <exec executable="${config.build.abeHome}/bin/build.bat"
+              dir="${config.build.abeHome}"
               failonerror="true"
               osfamily="windows">
             <arg value="-Dsource=${isPackagesDir}"/>
-            <arg value="-Dtarget=${fbrRepoDir}"/>
+            <arg value="-Dtarget=${config.build.buildStorageDir}"/>
             <arg value="-Dproject.name=${bda.projectName}"/>
         </exec>
         
-        <exec executable="${config.build.abeHome}/bin/build.sh" 
-              dir="${config.build.abeHome}" 
+        <exec executable="${config.build.abeHome}/bin/build.sh"
+              dir="${config.build.abeHome}"
               failonerror="true"
               osfamily="unix">
             <arg value="-Dsource=${isPackagesDir}"/>
-            <arg value="-Dtarget=${fbrRepoDir}"/>
+            <arg value="-Dtarget=${config.build.buildStorageDir}"/>
             <arg value="-Dproject.name=${bda.projectName}"/>
         </exec>
         
