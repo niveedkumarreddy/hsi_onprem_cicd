@@ -53,7 +53,7 @@ jobs:
           $COMMIT_SHA = "${{ github.sha }}".Substring(0,7)
           "build-number=$BUILD_NUM" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           "commit-sha=$COMMIT_SHA" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-          "fbr-path=tmp/fbr/$env:PROJECT_NAME`_$BUILD_NUM" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "fbr-path=build" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           "### Build Information" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
           "- Build Number: $BUILD_NUM" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
           "- Commit: $COMMIT_SHA" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
@@ -77,6 +77,7 @@ jobs:
         run: |
           # Use PowerShell to convert paths to Windows format
           $WORKSPACE = "${{ github.workspace }}".Replace('/', '\')
+          $SAG_HOME_WIN = "$env:SAG_HOME".Replace('/', '\')
           
           @"
           # Build Configuration
@@ -94,7 +95,7 @@ jobs:
           fbrRepoDir=$WORKSPACE\build
           
           # ABE Configuration
-          config.build.abeHome=$env:SAG_HOME\common\AssetBuildEnvironment
+          config.build.abeHome=$SAG_HOME_WIN\common\AssetBuildEnvironment
           
           # Environment Definition
           environmentsDefinition=$WORKSPACE\ENV.groovy
@@ -117,31 +118,32 @@ jobs:
           ant -f build.xml build -verbose
           
           Write-Host "Build completed. Checking output..."
-          Get-ChildItem "${{ github.workspace }}/tmp/fbr/"
+          if (Test-Path "${{ github.workspace }}/build") {
+            Get-ChildItem "${{ github.workspace }}/build" -Recurse | Select-Object -First 10
+          }
       
       - name: Validate Build Output
         shell: powershell
         run: |
-          $FBR_DIR = "${{ github.workspace }}/tmp/fbr/$env:PROJECT_NAME`_${{ github.run_number }}"
-          if (-not (Test-Path $FBR_DIR)) {
-            Write-Error "ERROR: Build output directory not found: $FBR_DIR"
+          $BUILD_DIR = "${{ github.workspace }}/build"
+          if (-not (Test-Path $BUILD_DIR)) {
+            Write-Error "ERROR: Build output directory not found: $BUILD_DIR"
             exit 1
           }
           
-          Write-Host "Build artifacts found:"
-          Get-ChildItem -Path $FBR_DIR -Recurse -File | Select-Object -First 20 | ForEach-Object { $_.FullName }
+          Write-Host "Build artifacts found in: $BUILD_DIR"
+          Get-ChildItem -Path $BUILD_DIR -Recurse -File | Select-Object -First 20 | ForEach-Object { $_.FullName }
           
           # Count artifacts
-          $ARTIFACT_COUNT = (Get-ChildItem -Path $FBR_DIR -Recurse -File).Count
+          $ARTIFACT_COUNT = (Get-ChildItem -Path $BUILD_DIR -Recurse -File).Count
+          Write-Host "Total artifacts: $ARTIFACT_COUNT"
           "Total artifacts: $ARTIFACT_COUNT" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
       
       - name: Archive Build Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: build-artifacts-${{ github.run_number }}
-          path: |
-            tmp/fbr/**
-            build/**
+          path: build/**
           retention-days: 30
           compression-level: 6
       
