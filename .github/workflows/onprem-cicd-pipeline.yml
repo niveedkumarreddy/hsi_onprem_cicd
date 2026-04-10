@@ -13,8 +13,8 @@ on:
 
 env:
   SAG_INSTALL_DIR: C:/IBM/webMethods
-  BUILD_OUTPUT_DIR: C:/IBM/webMethods/builds
-  BUILD_SOURCE_DIR: C:/IBM/webMethods/workspace/deployerSource
+  BUILD_OUTPUT_DIR: C:/Users/NiveedKumarReddyBoll/Customer_Projects/Henry_Schen/implementation/build
+  BUILD_SOURCE_DIR: C:/Users/NiveedKumarReddyBoll/Customer_Projects/Henry_Schen/implementation/workspace/deployerSource
   BUILD_VERSION: 10.3
   DEPLOYER_HOST: localhost
   DEPLOYER_PORT: 5555
@@ -218,7 +218,7 @@ jobs:
           
       - name: Create Deployer project
         run: |
-          $projectAutomatorScript = "${{ env.SAG_INSTALL_DIR }}/common/lib/ant/bin/projectautomator.bat"
+          $projectAutomatorScript = "${{ env.SAG_INSTALL_DIR }}/IntegrationServer/instances/default/packages/WmDeployer/bin/projectautomator.bat"
           $projectAutomatorXml = "./Deployment_ProjectAutomator.xml"
           
           if ((Test-Path $projectAutomatorScript) -and (Test-Path $projectAutomatorXml)) {

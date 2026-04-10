@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Values version="2.0">
+  <value name="enabled">yes</value>
+  <value name="system_package">no</value>
+  <null name="startup_services"/>
+  <null name="shutdown_services"/>
+  <null name="replication_services"/>
+  <null name="requires"/>
+  <null name="listACL"/>
+  <value name="webappLoad">yes</value>
+  <value name="version">1.0</value>
+  <value name="build">1.0.14</value>
+  <value name="name">OH_MonitoringAutomation</value>
+  <null name="description"/>
+  <value name="time">2021-12-14 18:38:05 CET</value>
+  <value name="jvm_version">1.8.0_292</value>
+  <value name="publisher">NDCVN482.D90.intra</value>
+  <value name="patch_nums"></value>
+  <array name="patch_history" type="record" depth="1">
+    <record javaclass="com.wm.util.Values">
+      <value name="name">UserUtility_myBuild_1658485813898</value>
+      <value name="version">1.0</value>
+      <value name="build">1.0.14</value>
+      <value name="description">UserUtility_</value>
+      <value name="time">2022-07-22 12:30:13 CEST</value>
+      <value name="jvm_version">1.8.0_292</value>
+      <null name="publisher"/>
+      <value name="patch_nums"></value>
+    </record>
+  </array>
+</Values>
