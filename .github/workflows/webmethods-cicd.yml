@@ -26,9 +26,9 @@ on:
         default: false
 
 env:
-  SAG_HOME: C:/SoftwareAG
+  SAG_HOME: C:/IBM/webMethods
   CICD_HOME: ${{ github.workspace }}/cicd
-  JAVA_HOME: C:/SoftwareAG/jvm/jvm
+  JAVA_HOME: C:/IBM/webMethods/jvm/jvm
   PROJECT_NAME: hsi_onprem_cicd
 
 jobs:
@@ -103,8 +103,13 @@ jobs:
       - name: Build with Asset Build Environment
         shell: powershell
         run: |
+          # Add ANT to PATH
+          $env:PATH = "$env:SAG_HOME/common/lib/ant/bin;$env:PATH"
+          
           Set-Location $env:CICD_HOME
           Write-Host "Starting ABE build..."
+          Write-Host "ANT location: $env:SAG_HOME/common/lib/ant/bin"
+          
           ant -f build.xml build `
             -Dproject.properties="${{ github.workspace }}/build.properties" `
             -verbose
