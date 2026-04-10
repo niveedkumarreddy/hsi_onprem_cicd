@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project name="webMethods-CICD" default="buildDeployTest" basedir=".." xmlns:if="ant:if" xmlns:unless="ant:unless">
+<project name="webMethods-CICD" default="buildDeployTest" basedir="..">
     
-    <!-- Load properties file - defaults to build.properties if not specified via -Dproject.properties -->
-    <property name="project.properties.file" value="${project.properties}" if:set="project.properties"/>
-    <property name="project.properties.file" value="${basedir}/build.properties" unless:set="project.properties"/>
-    <property file="${project.properties.file}"/>
+    <!-- Load properties file - use deploy.properties if specified, otherwise build.properties -->
+    <!-- Command-line properties (-D) have highest precedence and cannot be overridden -->
+    <property file="${basedir}/${project.properties}"/>
+    <property file="${basedir}/build.properties"/>
     <property name="cicd.home" value="${basedir}/cicd"/>
     
     <!-- Import sub-build files -->
