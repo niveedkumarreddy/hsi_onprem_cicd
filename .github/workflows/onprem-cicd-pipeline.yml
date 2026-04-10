@@ -32,17 +32,19 @@ jobs:
           
       - name: Get commit information
         id: commit-info
+        shell: pwsh
         run: |
-          echo "commit_id=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-          echo "commit_message=$(git log -1 --pretty=%B)" >> $GITHUB_OUTPUT
-        shell: bash
+          $commitId = git rev-parse --short HEAD
+          $commitMessage = git log -1 --pretty=%B
+          "commit_id=$commitId" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "commit_message=$commitMessage" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
         
       - name: Display checkout information
+        shell: pwsh
         run: |
-          echo "Repository checked out successfully"
-          echo "Commit ID: ${{ steps.commit-info.outputs.commit_id }}"
-          echo "Commit Message: ${{ steps.commit-info.outputs.commit_message }}"
-        shell: bash
+          Write-Host "Repository checked out successfully"
+          Write-Host "Commit ID: ${{ steps.commit-info.outputs.commit_id }}"
+          Write-Host "Commit Message: ${{ steps.commit-info.outputs.commit_message }}"
 
   # Stage 2: Build
   build:
@@ -54,11 +56,11 @@ jobs:
         uses: actions/checkout@v4
         
       - name: Set up build environment
+        shell: pwsh
         run: |
-          echo "Setting up build environment..."
-          echo "SAG Install Directory: ${{ env.SAG_INSTALL_DIR }}"
-          echo "Build Output Directory: ${{ env.BUILD_OUTPUT_DIR }}"
-        shell: bash
+          Write-Host "Setting up build environment..."
+          Write-Host "SAG Install Directory: ${{ env.SAG_INSTALL_DIR }}"
+          Write-Host "Build Output Directory: ${{ env.BUILD_OUTPUT_DIR }}"
         
       - name: Configure build.properties
         run: |
