@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+
+<project default="createBuildNumber" basedir=".">	
+	<property file="build.number" />
+	<loadproperties srcFile="build.properties">
+		<filterchain>
+		<tokenfilter>
+		<trim/>
+		</tokenfilter>
+		</filterchain>
+	</loadproperties> 
+	<target name = "createBuildNumber">
+		<math result="newBuildNumber" operand1="${build_number}" operation="+" operand2="1" datatype="int"/>
+		<propertyfile file="build.number">
+			<entry key="build_number" operation="=" value="${newBuildNumber}"/>
+		</propertyfile>
+		<property name = "build.number" value = "${build.version}.${build_number}"/>
+	</target>
+</project>

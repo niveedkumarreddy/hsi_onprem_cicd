@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DeploymentProject>
+    <ProjectName>@PROJECT_PREFIX@_@BUILD_NUMBER@_@PROJECT_NAME@</ProjectName>
+    <Description>Automated deployment for @TARGET_ENV@ environment - Build @BUILD_NUMBER@</Description>
+    
+    <DeploymentSet name="MainDeploymentSet">
+        <!-- AIAEngageSpringBoots Deployment -->
+        <DeploymentCandidate>
+            <SourceRepositoryName>@FBR_REPO_NAME@</SourceRepositoryName>
+            <MapSetName>AIAEngageSpringBoots</MapSetName>
+            <MapName>AIAEngageSpringBoots</MapName>
+            <TargetServerAlias>@TARGET_ENV@_IS</TargetServerAlias>
+            <DeploymentSetName>MainDeploymentSet</DeploymentSetName>
+        </DeploymentCandidate>
+        
+        <!-- Add more packages here as needed -->
+        <!-- Example:
+        <DeploymentCandidate>
+            <SourceRepositoryName>@FBR_REPO_NAME@</SourceRepositoryName>
+            <MapSetName>MyUtilityPackage</MapSetName>
+            <MapName>MyUtilityPackage</MapName>
+            <TargetServerAlias>@TARGET_ENV@_IS</TargetServerAlias>
+            <DeploymentSetName>MainDeploymentSet</DeploymentSetName>
+        </DeploymentCandidate>
+        -->
+    </DeploymentSet>
+    
+    <DeploymentMap>
+        <!-- Integration Server Alias -->
+        <alias name="@TARGET_ENV@_IS">
+            <type>IS</type>
+            <host>@IS_HOST@</host>
+            <port>@IS_PORT@</port>
+            <user>@IS_USERNAME@</user>
+            <pwd>@IS_PASSWORD@</pwd>
+            <useSSL>false</useSSL>
+        </alias>
+        
+        <!-- Universal Messaging Alias -->
+        <alias name="@TARGET_ENV@_UM">
+            <type>UM</type>
+            <host>@UM_HOST@</host>
+            <port>@UM_PORT@</port>
+        </alias>
+        
+        <!-- JDBC Adapter Alias -->
+        <alias name="@TARGET_ENV@_JDBC">
+            <type>JDBC</type>
+            <host>@IS_HOST@</host>
+            <port>@IS_PORT@</port>
+            <user>@IS_USERNAME@</user>
+            <pwd>@IS_PASSWORD@</pwd>
+        </alias>
+        
+        <!-- AS400 Adapter Alias -->
+        <alias name="@TARGET_ENV@_AS400">
+            <type>AS400</type>
+            <host>@IS_HOST@</host>
+            <port>@IS_PORT@</port>
+            <user>@IS_USERNAME@</user>
+            <pwd>@IS_PASSWORD@</pwd>
+        </alias>
+    </DeploymentMap>
+    
+    <DeploymentConfiguration>
+        <variableSubstitution>@DO_VARSUB@</variableSubstitution>
+        <variableSubstitutionDir>@VARSUB_DIR@</variableSubstitutionDir>
+    </DeploymentConfiguration>
+</DeploymentProject>
+
+<!-- Made with Bob -->

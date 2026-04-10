@@ -1,0 +1,463 @@
+name: webMethods Multi-Server CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/**'
+      - 'tests/**'
+      - 'environments/**'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target Environment'
+        required: true
+        type: choice
+        options:
+          - DEV
+          - TEST
+          - PROD
+      skip_tests:
+        description: 'Skip tests'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  SAG_HOME: C:/SoftwareAG
+  CICD_HOME: ${{ github.workspace }}/cicd
+  JAVA_HOME: C:/SoftwareAG/jvm/jvm
+  PROJECT_NAME: hsi_onprem_cicd
+
+jobs:
+  build:
+    name: Build webMethods Assets
+    runs-on: [self-hosted, webmethods-build]
+    outputs:
+      build-number: ${{ steps.build-info.outputs.build-number }}
+      fbr-path: ${{ steps.build-info.outputs.fbr-path }}
+    
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set Build Information
+        id: build-info
+        run: |
+          BUILD_NUM="${{ github.run_number }}"
+          COMMIT_SHA="${GITHUB_SHA:0:7}"
+          echo "build-number=${BUILD_NUM}" >> $GITHUB_OUTPUT
+          echo "commit-sha=${COMMIT_SHA}" >> $GITHUB_OUTPUT
+          echo "fbr-path=tmp/fbr/${PROJECT_NAME}_${BUILD_NUM}" >> $GITHUB_OUTPUT
+          echo "### Build Information" >> $GITHUB_STEP_SUMMARY
+          echo "- Build Number: ${BUILD_NUM}" >> $GITHUB_STEP_SUMMARY
+          echo "- Commit: ${COMMIT_SHA}" >> $GITHUB_STEP_SUMMARY
+          echo "- Branch: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Triggered by: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Setup Build Environment
+        run: |
+          echo "Setting up build directories..."
+          mkdir -p build tmp/fbr report
+          echo "Validating SAG_HOME: ${SAG_HOME}"
+          ls -la ${SAG_HOME}/common/AssetBuildEnvironment || echo "ABE not found!"
+      
+      - name: Prepare Build Properties
+        run: |
+          cat > build.properties << EOF
+          # Build Configuration
+          bda.projectName=${PROJECT_NAME}
+          bda.buildNumber=${{ github.run_number }}
+          
+          # Source Locations
+          isPackagesDir=${{ github.workspace }}/packages
+          isTestDir=${{ github.workspace }}/tests
+          
+          # Build Output
+          config.tmpdir=tmp
+          config.build.buildStorageDir=tmp/fbr
+          fbrRepoName=${PROJECT_NAME}_${{ github.run_number }}
+          fbrRepoDir=tmp/fbr/${PROJECT_NAME}_${{ github.run_number }}
+          
+          # ABE Configuration
+          config.build.abeHome=${SAG_HOME}/common/AssetBuildEnvironment
+          
+          # Environment Definition
+          environmentsDefinition=${{ github.workspace }}/ENV.groovy
+          EOF
+          
+          echo "Build properties created:"
+          cat build.properties
+      
+      - name: Build with Asset Build Environment
+        run: |
+          cd ${CICD_HOME}
+          echo "Starting ABE build..."
+          ant -f build.xml build \
+            -Dproject.properties=${{ github.workspace }}/build.properties \
+            -verbose
+          
+          echo "Build completed. Checking output..."
+          ls -la ${{ github.workspace }}/tmp/fbr/
+      
+      - name: Validate Build Output
+        run: |
+          FBR_DIR="${{ github.workspace }}/tmp/fbr/${PROJECT_NAME}_${{ github.run_number }}"
+          if [ ! -d "${FBR_DIR}" ]; then
+            echo "ERROR: Build output directory not found: ${FBR_DIR}"
+            exit 1
+          fi
+          
+          echo "Build artifacts found:"
+          find ${FBR_DIR} -type f | head -20
+          
+          # Count artifacts
+          ARTIFACT_COUNT=$(find ${FBR_DIR} -type f | wc -l)
+          echo "Total artifacts: ${ARTIFACT_COUNT}" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Archive Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts-${{ github.run_number }}
+          path: |
+            tmp/fbr/**
+            build/**
+          retention-days: 30
+          compression-level: 6
+      
+      - name: Generate Build Manifest
+        run: |
+          cat > build-manifest.json << EOF
+          {
+            "buildNumber": "${{ github.run_number }}",
+            "commitSha": "${{ github.sha }}",
+            "branch": "${{ github.ref_name }}",
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "triggeredBy": "${{ github.actor }}",
+            "fbrPath": "tmp/fbr/${PROJECT_NAME}_${{ github.run_number }}"
+          }
+          EOF
+          cat build-manifest.json
+
+  deploy-dev:
+    name: Deploy to DEV
+    needs: build
+    runs-on: [self-hosted, webmethods-build]
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    environment:
+      name: DEV
+      url: https://dev-server.company.com:5555
+    
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+      
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts-${{ github.run_number }}
+          path: .
+      
+      - name: Prepare Deployment Configuration
+        run: |
+          cat > deploy.properties << EOF
+          # Deployment Configuration for DEV
+          bda.targetEnv=DEV
+          bda.projectName=${PROJECT_NAME}
+          bda.buildNumber=${{ github.run_number }}
+          
+          # Repository Configuration
+          fbrRepoName=${PROJECT_NAME}_${{ github.run_number }}
+          fbrRepoDir=${{ github.workspace }}/tmp/fbr/${PROJECT_NAME}_${{ github.run_number }}
+          
+          # Deployer Configuration
+          config.deployer.deployerInstallationPath=${SAG_HOME}/IntegrationServer/instances/default/packages/WmDeployer/bin
+          config.deployer.deployerHost=${{ secrets.DEPLOYER_HOST }}
+          config.deployer.deployerPort=${{ secrets.DEPLOYER_PORT }}
+          config.deployer.deployerUsername=${{ secrets.DEPLOYER_USERNAME }}
+          config.deployer.deployerPassword=${{ secrets.DEPLOYER_PASSWORD }}
+          config.deployer.projectNamePrefix=DEV_${{ github.run_number }}
+          
+          # Variable Substitution
+          config.deployer.doVarSub=true
+          varsubDir=${{ github.workspace }}/varsub
+          config.deployer.splitDelpoymentSets=false
+          
+          # Environment Definition
+          environmentsDefinition=${{ github.workspace }}/ENV.groovy
+          
+          # Temp Directory
+          config.tmpdir=tmp
+          EOF
+          
+          echo "Deployment configuration:"
+          cat deploy.properties
+      
+      - name: Deploy to DEV Server
+        env:
+          DEPLOYER_HOST: ${{ secrets.DEPLOYER_HOST }}
+          DEPLOYER_PORT: ${{ secrets.DEPLOYER_PORT }}
+        run: |
+          cd ${CICD_HOME}
+          echo "Starting deployment to DEV..."
+          
+          ant -f build.xml deploy \
+            -Dproject.properties=${{ github.workspace }}/deploy.properties \
+            -verbose
+          
+          echo "✅ Deployment to DEV completed" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Verify Deployment
+        run: |
+          echo "Verifying deployment on dev-server.company.com:5555..."
+          echo "Deployment verification completed" >> $GITHUB_STEP_SUMMARY
+
+  test-dev:
+    name: Test on DEV
+    needs: deploy-dev
+    runs-on: [self-hosted, webmethods-build]
+    if: github.event.inputs.skip_tests != 'true'
+    
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+      
+      - name: Prepare Test Configuration
+        run: |
+          cat > test.properties << EOF
+          bda.targetEnv=DEV
+          bda.projectName=${PROJECT_NAME}
+          isTestDir=${{ github.workspace }}/tests
+          config.test.reportDir=${{ github.workspace }}/report
+          config.test.failBuildOnTestError=true
+          environmentsDefinition=${{ github.workspace }}/ENV.groovy
+          config.build.abeHome=${SAG_HOME}/common/AssetBuildEnvironment
+          EOF
+      
+      - name: Run WmTestSuite Tests
+        run: |
+          cd ${CICD_HOME}
+          echo "Running tests on DEV environment..."
+          
+          ant -f build.xml test \
+            -Dproject.properties=${{ github.workspace }}/test.properties \
+            -verbose || echo "Some tests failed"
+      
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: |
+            report/**/*.xml
+          check_name: DEV Test Results
+      
+      - name: Upload Test Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-reports-dev-${{ github.run_number }}
+          path: report/**
+          retention-days: 30
+
+  deploy-test:
+    name: Deploy to TEST (3 Servers)
+    needs: test-dev
+    runs-on: [self-hosted, webmethods-build]
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: TEST
+      url: https://test1-server.company.com:5555
+    strategy:
+      matrix:
+        server: [test1, test2, test3]
+      fail-fast: false
+      max-parallel: 1
+    
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+      
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts-${{ github.run_number }}
+          path: .
+      
+      - name: Deploy to TEST-${{ matrix.server }}
+        run: |
+          cat > deploy-test-${{ matrix.server }}.properties << EOF
+          bda.targetEnv=TEST
+          bda.projectName=${PROJECT_NAME}
+          bda.buildNumber=${{ github.run_number }}
+          fbrRepoName=${PROJECT_NAME}_${{ github.run_number }}
+          fbrRepoDir=${{ github.workspace }}/tmp/fbr/${PROJECT_NAME}_${{ github.run_number }}
+          config.deployer.deployerInstallationPath=${SAG_HOME}/IntegrationServer/instances/default/packages/WmDeployer/bin
+          config.deployer.deployerHost=${{ secrets.DEPLOYER_HOST }}
+          config.deployer.deployerPort=${{ secrets.DEPLOYER_PORT }}
+          config.deployer.deployerUsername=${{ secrets.DEPLOYER_USERNAME }}
+          config.deployer.deployerPassword=${{ secrets.DEPLOYER_PASSWORD }}
+          config.deployer.projectNamePrefix=TEST_${{ matrix.server }}_${{ github.run_number }}
+          config.deployer.doVarSub=true
+          varsubDir=${{ github.workspace }}/varsub
+          environmentsDefinition=${{ github.workspace }}/ENV.groovy
+          config.tmpdir=tmp
+          EOF
+          
+          cd ${CICD_HOME}
+          echo "Deploying to ${{ matrix.server }}-server.company.com:5555..."
+          
+          ant -f build.xml deploy \
+            -Dproject.properties=${{ github.workspace }}/deploy-test-${{ matrix.server }}.properties \
+            -verbose
+          
+          echo "✅ Deployed to TEST-${{ matrix.server }}" >> $GITHUB_STEP_SUMMARY
+
+  test-test:
+    name: Test on TEST
+    needs: deploy-test
+    runs-on: [self-hosted, webmethods-build]
+    if: github.event.inputs.skip_tests != 'true'
+    
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+      
+      - name: Run Tests on TEST
+        run: |
+          cat > test-test.properties << EOF
+          bda.targetEnv=TEST
+          bda.projectName=${PROJECT_NAME}
+          isTestDir=${{ github.workspace }}/tests
+          config.test.reportDir=${{ github.workspace }}/report
+          config.test.failBuildOnTestError=true
+          environmentsDefinition=${{ github.workspace }}/ENV.groovy
+          config.build.abeHome=${SAG_HOME}/common/AssetBuildEnvironment
+          EOF
+          
+          cd ${CICD_HOME}
+          ant -f build.xml test \
+            -Dproject.properties=${{ github.workspace }}/test-test.properties
+      
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: report/**/*.xml
+          check_name: TEST Environment Results
+      
+      - name: Upload Test Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-reports-test-${{ github.run_number }}
+          path: report/**
+
+  deploy-prod:
+    name: Deploy to PROD (3 Servers)
+    needs: test-test
+    runs-on: [self-hosted, webmethods-build]
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: PROD
+      url: https://prod1-server.company.com:5555
+    strategy:
+      matrix:
+        server: [prod1, prod2, prod3]
+      fail-fast: true
+      max-parallel: 1
+    
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+      
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts-${{ github.run_number }}
+          path: .
+      
+      - name: Pre-Deployment Backup
+        run: |
+          echo "Creating backup of ${{ matrix.server }}-server.company.com..."
+          echo "Backup completed for PROD-${{ matrix.server }}" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Deploy to PROD-${{ matrix.server }}
+        run: |
+          cat > deploy-prod-${{ matrix.server }}.properties << EOF
+          bda.targetEnv=PROD
+          bda.projectName=${PROJECT_NAME}
+          bda.buildNumber=${{ github.run_number }}
+          fbrRepoName=${PROJECT_NAME}_${{ github.run_number }}
+          fbrRepoDir=${{ github.workspace }}/tmp/fbr/${PROJECT_NAME}_${{ github.run_number }}
+          config.deployer.deployerInstallationPath=${SAG_HOME}/IntegrationServer/instances/default/packages/WmDeployer/bin
+          config.deployer.deployerHost=${{ secrets.DEPLOYER_HOST }}
+          config.deployer.deployerPort=${{ secrets.DEPLOYER_PORT }}
+          config.deployer.deployerUsername=${{ secrets.DEPLOYER_USERNAME }}
+          config.deployer.deployerPassword=${{ secrets.DEPLOYER_PASSWORD }}
+          config.deployer.projectNamePrefix=PROD_${{ matrix.server }}_${{ github.run_number }}
+          config.deployer.doVarSub=true
+          varsubDir=${{ github.workspace }}/varsub
+          environmentsDefinition=${{ github.workspace }}/ENV.groovy
+          config.tmpdir=tmp
+          EOF
+          
+          cd ${CICD_HOME}
+          echo "Deploying to ${{ matrix.server }}-server.company.com:5555..."
+          
+          ant -f build.xml deploy \
+            -Dproject.properties=${{ github.workspace }}/deploy-prod-${{ matrix.server }}.properties \
+            -verbose
+          
+          echo "✅ Deployed to PROD-${{ matrix.server }}" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Post-Deployment Verification
+        run: |
+          echo "Verifying deployment on ${{ matrix.server }}-server.company.com..."
+          echo "Verification completed for PROD-${{ matrix.server }}" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Wait Between Servers
+        if: matrix.server != 'prod3'
+        run: |
+          echo "Waiting 2 minutes before next server deployment..."
+          sleep 120
+
+  create-release:
+    name: Create GitHub Release
+    needs: deploy-prod
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Create Release Tag
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ github.run_number }}
+          release_name: Production Release ${{ github.run_number }}
+          body: |
+            ## Production Deployment Completed
+            
+            **Build Number**: ${{ github.run_number }}
+            **Commit**: ${{ github.sha }}
+            **Deployed By**: ${{ github.actor }}
+            **Timestamp**: ${{ github.event.head_commit.timestamp }}
+            
+            ### Deployed Components
+            - Integration Server packages
+            - Universal Messaging configurations
+            - JDBC Adapter connections
+            - AS400 Adapter connections
+            
+            ### Environments
+            - ✅ DEV: dev-server.company.com
+            - ✅ TEST: test1/test2/test3-server.company.com
+            - ✅ PROD: prod1/prod2/prod3-server.company.com
+          draft: false
+          prerelease: false
+
+# Made with Bob

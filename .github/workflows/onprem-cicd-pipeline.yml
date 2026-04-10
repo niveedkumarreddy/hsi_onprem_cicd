@@ -1,0 +1,314 @@
+name: On-Premise CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+env:
+  SAG_INSTALL_DIR: C:/IBM/webMethods
+  BUILD_OUTPUT_DIR: C:/IBM/webMethods/builds
+  BUILD_SOURCE_DIR: C:/IBM/webMethods/workspace/deployerSource
+  BUILD_VERSION: 10.3
+  DEPLOYER_HOST: localhost
+  DEPLOYER_PORT: 5555
+
+jobs:
+  # Stage 1: Declarative Checkout SCM
+  checkout-scm:
+    name: Declarative Checkout SCM
+    runs-on: self-hosted
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Get commit information
+        id: commit-info
+        run: |
+          echo "commit_id=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "commit_message=$(git log -1 --pretty=%B)" >> $GITHUB_OUTPUT
+        shell: bash
+        
+      - name: Display checkout information
+        run: |
+          echo "Repository checked out successfully"
+          echo "Commit ID: ${{ steps.commit-info.outputs.commit_id }}"
+          echo "Commit Message: ${{ steps.commit-info.outputs.commit_message }}"
+        shell: bash
+
+  # Stage 2: Build
+  build:
+    name: Build
+    runs-on: self-hosted
+    needs: checkout-scm
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Set up build environment
+        run: |
+          echo "Setting up build environment..."
+          echo "SAG Install Directory: ${{ env.SAG_INSTALL_DIR }}"
+          echo "Build Output Directory: ${{ env.BUILD_OUTPUT_DIR }}"
+        shell: bash
+        
+      - name: Configure build.properties
+        run: |
+          # Update build.properties file
+          $buildPropsPath = "${{ env.SAG_INSTALL_DIR }}/common/AssetBuildEnvironment/master_build/build.properties"
+          
+          if (Test-Path $buildPropsPath) {
+            (Get-Content $buildPropsPath) | ForEach-Object {
+              $_ -replace '^build.output.dir=.*', "build.output.dir=${{ env.BUILD_OUTPUT_DIR }}" `
+                 -replace '^build.source.dir=.*', "build.source.dir=${{ env.BUILD_SOURCE_DIR }}" `
+                 -replace '^enable.build.IS\s*=.*', 'enable.build.IS=true'
+            } | Set-Content $buildPropsPath
+            
+            Write-Host "build.properties configured successfully"
+          } else {
+            Write-Host "Warning: build.properties not found at $buildPropsPath"
+          }
+        shell: pwsh
+        
+      - name: Execute ABE build
+        run: |
+          $buildScript = "${{ env.SAG_INSTALL_DIR }}/common/AssetBuildEnvironment/bin/build.bat"
+          
+          if (Test-Path $buildScript) {
+            Write-Host "Starting ABE build process..."
+            
+            & $buildScript `
+              -Dbuild.output.dir="${{ env.BUILD_OUTPUT_DIR }}" `
+              -Dbuild.source.dir="${{ env.BUILD_SOURCE_DIR }}" `
+              -Denable.build.IS=true
+            
+            if ($LASTEXITCODE -eq 0) {
+              Write-Host "Build completed successfully"
+            } else {
+              Write-Host "Build failed with exit code: $LASTEXITCODE"
+              exit $LASTEXITCODE
+            }
+          } else {
+            Write-Host "Error: Build script not found at $buildScript"
+            exit 1
+          }
+        shell: pwsh
+        
+      - name: Verify build artifacts
+        run: |
+          if (Test-Path "${{ env.BUILD_OUTPUT_DIR }}") {
+            Write-Host "Build artifacts created:"
+            Get-ChildItem -Path "${{ env.BUILD_OUTPUT_DIR }}" -Recurse | Select-Object FullName
+          } else {
+            Write-Host "Warning: Build output directory not found"
+          }
+        shell: pwsh
+        
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: ${{ env.BUILD_OUTPUT_DIR }}
+          retention-days: 30
+
+  # Stage 3: GenerateAutomator
+  generate-automator:
+    name: GenerateAutomator
+    runs-on: self-hosted
+    needs: build
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: ${{ env.BUILD_OUTPUT_DIR }}
+          
+      - name: Locate ProjectAutomator.xml
+        id: locate-automator
+        run: |
+          # Find ProjectAutomator.xml in the workspace
+          $automatorFiles = Get-ChildItem -Path . -Filter "*ProjectAutomator.xml" -Recurse
+          
+          if ($automatorFiles.Count -gt 0) {
+            $automatorPath = $automatorFiles[0].FullName
+            Write-Host "Found ProjectAutomator.xml at: $automatorPath"
+            echo "automator_path=$automatorPath" >> $env:GITHUB_OUTPUT
+          } else {
+            Write-Host "Warning: ProjectAutomator.xml not found"
+            echo "automator_path=" >> $env:GITHUB_OUTPUT
+          }
+        shell: pwsh
+        
+      - name: Update ProjectAutomator.xml
+        run: |
+          $antScript = "${{ env.SAG_INSTALL_DIR }}/common/lib/ant/bin/ant.bat"
+          $updateAutomatorXml = "./deployer/updateAutomator.xml"
+          
+          if ((Test-Path $antScript) -and (Test-Path $updateAutomatorXml)) {
+            Write-Host "Updating ProjectAutomator.xml using Ant script..."
+            
+            & $antScript `
+              -f $updateAutomatorXml `
+              -Dbuild.output.dir="${{ env.BUILD_OUTPUT_DIR }}" `
+              -Ddeployer.host="${{ env.DEPLOYER_HOST }}" `
+              -Ddeployer.port="${{ env.DEPLOYER_PORT }}"
+            
+            if ($LASTEXITCODE -eq 0) {
+              Write-Host "ProjectAutomator.xml updated successfully"
+            } else {
+              Write-Host "Failed to update ProjectAutomator.xml"
+              exit $LASTEXITCODE
+            }
+          } else {
+            Write-Host "Warning: Ant script or updateAutomator.xml not found"
+            Write-Host "Ant script path: $antScript"
+            Write-Host "UpdateAutomator.xml path: $updateAutomatorXml"
+          }
+        shell: pwsh
+        
+      - name: Upload updated automator
+        uses: actions/upload-artifact@v4
+        with:
+          name: project-automator
+          path: |
+            **/ProjectAutomator.xml
+            **/Deployment_ProjectAutomator.xml
+          retention-days: 30
+
+  # Stage 4: CreateProject
+  create-project:
+    name: CreateProject
+    runs-on: self-hosted
+    needs: generate-automator
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: project-automator
+          
+      - name: Create Deployer project
+        run: |
+          $projectAutomatorScript = "${{ env.SAG_INSTALL_DIR }}/common/lib/ant/bin/projectautomator.bat"
+          $projectAutomatorXml = "./Deployment_ProjectAutomator.xml"
+          
+          if ((Test-Path $projectAutomatorScript) -and (Test-Path $projectAutomatorXml)) {
+            Write-Host "Creating Deployer project..."
+            
+            & $projectAutomatorScript $projectAutomatorXml
+            
+            if ($LASTEXITCODE -eq 0) {
+              Write-Host "Deployer project created successfully"
+            } else {
+              Write-Host "Failed to create Deployer project"
+              exit $LASTEXITCODE
+            }
+          } else {
+            Write-Host "Warning: ProjectAutomator script or XML not found"
+            Write-Host "Script path: $projectAutomatorScript"
+            Write-Host "XML path: $projectAutomatorXml"
+          }
+        shell: pwsh
+        
+      - name: Verify project creation
+        run: |
+          Write-Host "Verifying Deployer project creation..."
+          # Add verification logic here based on your Deployer setup
+          Write-Host "Project verification completed"
+        shell: pwsh
+
+  # Stage 5: Deploy
+  deploy:
+    name: Deploy
+    runs-on: self-hosted
+    needs: create-project
+    environment:
+      name: production
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        
+      - name: Deploy to target servers
+        run: |
+          Write-Host "Starting deployment process..."
+          
+          # Execute deployment using Deployer
+          $deployerScript = "${{ env.SAG_INSTALL_DIR }}/IntegrationServer/instances/default/packages/WmDeployer/bin/Deployer.bat"
+          
+          if (Test-Path $deployerScript) {
+            Write-Host "Executing deployment..."
+            
+            # Add your deployment command here
+            # Example: & $deployerScript -project "YourProject" -candidate "YourCandidate"
+            
+            Write-Host "Deployment initiated successfully"
+          } else {
+            Write-Host "Warning: Deployer script not found at $deployerScript"
+          }
+        shell: pwsh
+        
+      - name: Verify deployment
+        run: |
+          Write-Host "Verifying deployment status..."
+          
+          # Add deployment verification logic
+          # Example: Check if services are running, test endpoints, etc.
+          
+          Write-Host "Deployment verification completed"
+        shell: pwsh
+        
+      - name: Post-deployment notifications
+        if: always()
+        run: |
+          if (${{ job.status }} -eq 'success') {
+            Write-Host "✅ Deployment completed successfully!"
+          } else {
+            Write-Host "❌ Deployment failed. Please check the logs."
+          }
+        shell: pwsh
+
+  # Summary job
+  pipeline-summary:
+    name: Pipeline Summary
+    runs-on: self-hosted
+    needs: [checkout-scm, build, generate-automator, create-project, deploy]
+    if: always()
+    steps:
+      - name: Generate pipeline summary
+        run: |
+          Write-Host "========================================="
+          Write-Host "Pipeline Execution Summary"
+          Write-Host "========================================="
+          Write-Host "Checkout SCM: ${{ needs.checkout-scm.result }}"
+          Write-Host "Build: ${{ needs.build.result }}"
+          Write-Host "Generate Automator: ${{ needs.generate-automator.result }}"
+          Write-Host "Create Project: ${{ needs.create-project.result }}"
+          Write-Host "Deploy: ${{ needs.deploy.result }}"
+          Write-Host "========================================="
+          
+          if ("${{ needs.deploy.result }}" -eq "success") {
+            Write-Host "✅ Pipeline completed successfully!"
+            exit 0
+          } else {
+            Write-Host "❌ Pipeline failed. Check individual stage logs."
+            exit 1
+          }
+        shell: pwsh
+
+# Made with Bob

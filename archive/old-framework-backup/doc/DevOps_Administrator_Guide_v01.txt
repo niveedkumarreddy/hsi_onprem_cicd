@@ -1,0 +1,1616 @@
+
+
+
+
+
+
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+DEVOPS ADMINISTRATOR GUIDE
+	
+		
+Version 1.0  | October 2019
+
+
+Table of Contents
+
+1.0	REVISION HISTORY	5
+2.0	INTRODUCTION	6
+2.1	Purpose of this document	6
+2.2	Audience	6
+2.3	In-scope	6
+2.4	Out-of-scope	7
+3.0	DevOPS	8
+3.1	Overview	8
+3.2	Continuous Integration (CI)	8
+3.3	Continuous Delivery (CD)	9
+3.4	Continuous Deployment	10
+3.5	Logical View - how does it work	11
+3.6	Logical Flow	13
+3.7	Reference Architecture	14
+3.8	Recommended GIT structure	14
+3.9	DevOps Directory Structure	16
+4.0	Installation and configuration	16
+4.1	GitLab Installation	16
+4.1.1	Pre-requisite	16
+4.1.2	Start the installation	17
+4.2	GitLab Configurations	22
+4.2.1	Create user	22
+4.2.2	Create Groups	24
+4.2.3	Create Projects	26
+4.2.4	Add Branch	27
+4.2.5	Protected Branch	30
+4.2.6	Add Member to GITLab Project	32
+4.2.7	Webhook and secret key	33
+4.2.8	GitLab - Personal Access Token for Jenkins	37
+4.3	Jenkins Installation	39
+4.3.1	Pre-requisite	39
+4.3.2	Installation Steps	39
+4.3.3	Jenkins Plugins	46
+4.3.4	GIT client on Jenkins server	48
+4.4	Jenkins Configurations	50
+4.4.1	Basic Configuration	50
+4.4.2	Credentials configurations	51
+4.4.3	SMTP Configurations	53
+4.5	Jenkin Jobs	54
+4.5.1	{BusinessApplication}_checkout_git	56
+4.5.2	{BusinessApplication}_identify_changes	58
+4.5.3	{BusinessApplication}_build_abe	59
+4.5.4	{BusinessApplication}_create_deployer_project	62
+4.5.5	{BusinessApplication}_deploy_is_reference	66
+4.5.6	{BusinessApplication}_unit_test_reference	71
+4.5.7	{BusinessApplication}_deploy_is_test	74
+4.5.8	{BusinessApplication}_unit_test_test	75
+4.5.9	{BusinessApplication}_deploy_is_preprod	75
+4.5.10	{BusinessApplication}_unit_test_preprod	76
+4.5.11	{BusinessApplication}_PRD_checkout_git	76
+4.5.12	{BusinessApplication}_PRD_identify_changes	76
+4.5.13	{BusinessApplication}_PRD_build_abe	77
+4.5.14	{BusinessApplication}_PRD_create_deployer_project	77
+4.5.15	{BusinessApplication}_PRD_deploy_is_prod	77
+4.5.16	{BusinessApplication}_rollback_is_all_env	77
+4.5.17	Jenkins jobs execution	79
+4.6	ABE Installation	79
+4.6.1	Installation Steps	79
+4.6.2	Directory Structure Configuration	83
+4.7	Configurations for Automated Unit Testing	84
+4.7.1	Configurations on Reference Server	84
+4.7.2	Configurations on Remote Server	85
+4.8	How to add new Business Application in Automation	85
+4.8.1	Add Jenkins Jobs	85
+4.8.2	Add ABE artifacts	88
+4.8.3	Shell Scripts configuration	89
+4.8.4	webhook configuration	89
+5.0	References	90
+5.1	SoftwareAG References	90
+5.2	General References	90
+5.3	Scripts and Files used	90
+
+ 
+1.0	REVISION HISTORY
+Versio
+n 
+Numbe
+r
+Date
+Revision History
+Author
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+2.0	INTRODUCTION
+2.1	Purpose of this document
+
+Fruit Egypt is using IBM's webMethods platform for mission critical enterprise integrations for 
+both internal and external data exchanges. This landscape has grown over a period with more 
+interfaces and system adapters were being added to the platform regularly, making it 
+challenging to manage the delivery of integration projects. With changing business and I.T 
+landscape, is looking for an effective continuous delivery and automation setup to reduce time to 
+on-board integration solutions and improve quality of deliverables through automated testing 
+and deployment. 
+
+They key objectives of this setup are,
+
+?	To reduce delivery timelines and improve quality of deliverables by adopting automated 
+quality checks and end-to-end deployment process.
+
+?	To reduce friction between DEV, Ops and QA teams for deployments and release 
+management thereby creating a DevOps delivery approach.
+
+?	To establish an automated, reliable, repeatable integration projects delivery mechanism that 
+supports agile delivery of integration projects.
+
+?	To minimize the deployment errors generally caused with human intervention during he 
+process of deploying the assets.
+
+?	To provide an easy rollback mechanism.
+2.2	Audience
+
+*	WebMethods Developers.
+*	Development Managers.
+*	Technical architect
+2.3	In-scope
+
+This document describes the recommended CI/CD setup process for Fruit Egypt. Below are the 
+components which are in scope for the current CI/CD implementation.
+-	WebMethods Integration Server
+
+Considering the number of work packages (set of Integration servers with same set of packages 
+with count of 14) and proposed solution to split the online servers into 6, the scope of the CI/CD 
+process will be split into two phases.
+
+     Phase -1: CI/CD setup for current implementation considering 14 distinct servers.
+     Phase -2: CI/CD setup for the proposed implementation considering 6 distinct servers.
+2.4	Out-of-scope
+
+*	Standard build and test tool such as Ant and Junit.
+*	License and support of any non-SAG tools.
+
+
+
+ 
+3.0	DEVOPS
+3.1	Overview 
+
+The need for DevOps arose from the increasing success of agile software development, as that 
+led to organizations wanting to release their software faster and more frequently. As they sought 
+to overcome the strain this put on their release management processes, they had to adopt 
+patterns such as application release automation, continuous integration tools, and continuous 
+delivery.
+
+      
+
+
+ 
+3.2	Continuous Integration (CI)
+They goal of CI is to provide rapid feedback so that if a defect is introduced into the code 
+base, it can be identified and corrected as soon as possible. CI means that one developer 
+who writes code on his laptop at home, and another dev who codes on her desktop in the office 
+can both write software for the same product separately, integrate their changes together in a 
+place called the source repository. They can then build the combined software from the bits they 
+each wrote and test that it works the way they expect.
+CI requires that all developers have self-testing code. This is code that tests itself to ensure that 
+it is working as expected, and these tests are often called unit tests. When all the unit tests pass 
+after the code is integrated and will get a green build. This indicates that they have verified that 
+their changes are successfully integrated together, and the code is working as expected by the 
+tests. However, while the integrated code is successfully working together, it is not yet ready for 
+production because it has not been tested and verified as working in production-like 
+environments. To be practicing CI, developers must check-in to the main source repository, 
+integrate and test their code frequently and often. Usually many times an hour, but at a 
+minimum once a day.
+
+ 
+         
+
+3.3	Continuous Delivery (CD)
+Continuous Delivery means that each time developers changes to the code, integrates and 
+builds the code, that they also automatically test this code on environments that are very similar 
+to production. We call this progression of deploying to - and testing on - different environments 
+a deployment pipeline. Often the deployment pipeline has a development environment, a test 
+environment, and a staging environment, but these stages vary by the team, product and 
+organization.
+
+
+   	        
+
+3.4	Continuous Deployment
+This is a practice where every change that developers make, and which passes all the test 
+stages, automatically goes to production. Some companies do this, and others do not. To 
+achieve continuous deployment, you first need to get to continuous delivery, so it's not a priority 
+to decide which is better for you until you've starting practicing CD
+
+		
+
+3.5	Logical View - how does it work
+It is important to have a build server for practicing CI. It is equally important that either unit tests 
+or integration tests are treated as codebase and checked in to the VCS so that they can be 
+tested during CI process. Also, CI Process should have the dash boarding capability to show the 
+code review and test reports.
+
+             
+
+       Below are the high-level steps in the continuous integration process.
+
+1.	Checkin the assets from the developer's local designer to VCS (Git Lab)
+
+2.	Developers must daily update their local repository from VCS (Git Lab) before making changes to the 
+code. This will ensure everyone is working on the latest copy of the code
+
+3.	Jenkins Job will checkout the code on the scheduled manner
+
+4.	Using IBM's asset build environment and deployer scripts, Jenkins will create the build and deploys to 
+the Target server.
+
+5.	Unit test cases are executed on the deployed assets and reports will be shared with relevant stake 
+holders
+
+6.	If the build is stable with the desired quality, it will be promoted to the higher environments 
+(Test/PreProd/PROD)
+
+
+
+
+
+
+
+3.6	Logical Flow
+
+
+ 
+
+
+3.7	Reference Architecture
+
+Below is the high-level diagram which depicts the CI/CD environment setup for Fruit Egypt.
+            
+ 
+
+3.8	Recommended GIT structure
+
+Git repository is a web-based hosting service, which offers all of the distributed version control and source 
+code management (SCM) functionality. 
+
+This is completely is different from SVN, GIT works on local repository concept. You will always have two 
+repositories one is local repository and another one is Remote repository. 
+
+It is not possible to pull individual assets from repository either local or remote to your workspace. The 
+only possibility is to make the workspace as your local repository. E.g. In case of local development, for 
+working with IS packages, it is mandatory to make the packages folder as your local repository. 
+    
+ESB 
+Branch to maintain all IS assets 
+MWS 
+Branch to maintain all MWS assets 
+BPM 
+Branch to maintain all BPM assets 
+TN 
+Branch to maintain all TN assets 
+UM 
+Branch to maintain all UM assets 
+       
+Example, 
+
+ 
+
+There are some general instructions w.r.t Fruit business cases for DevOps branches.
+?	There will be two working branches i.e. one for non-prod (DEV_<BusinessApplication> e.g 
+DEV_EAIONL_ONL) and one for prod (PRD_<BusinessApplication> e.g PRD_EAIONL_ONL).
+?	Always checkout code from Production branch PRD_<BusinessApplication> e.g 
+PRD_EAIONL_ONL.
+?	The developers can't merge directly to any of the branches i.e. non-prod and prod.
+?	The developers need to push the changes are a new branch can be named based on the projects 
+working on to easily co-relate. For example, branch name like Project_Upgrade_Phase1
+?	The developers need to raise merge request on the non-prod branch first. Post testing in all non-
+prod environments, the project branch can be merged (with merge request) in production branch 
+to deploy the changes.
+?	 
+?	Never merge into an environment branch unless you are ready to deploy to that environment.
+?	Perform a diff between branches before merging-this can help prevent merging something that 
+wasn't intended, and can also help with writing release notes.
+3.9	DevOps Directory Structure 
+The directory structure for DevOps (CI/CD) implementation is like below:
+Directory 
+Details
+/wMDevops/softwares
+Repository location of the required softwares
+/wMDevops/apps
+Location for the jenkins and ABE software 
+installation
+/wMDevops/apps/softwareag
+Location for SoftwareAG product installation
+/wMDevops/apps/jenkins
+Jenkins installation
+/wMDevops/apps/cicd
+scripts related to CICD and workspace location
+/wMDevops/apps/cicd/scripts
+Location for the scripts
+/wMDevops/apps/cicd/scripts/config
+Location for the config files used by scripts.
+/wMDevops/apps/cicd/workspace
+Workspace for jenkins jobs
+/wMDevops/apps/cicd/workspace/ADSL_NONL
+Workspace for jenkins jobs for ADSL_NONL 
+business Application
+/wMDevops/apps/cicd/workspace/ADSL_NONL/ADSL
+_NONL_build_abe
+output, logs and archive directory for ABE 
+builds
+/wMDevops/apps/cicd/workspace/ADSL_NONL/ISCha
+nges
+Location for keeping only  changed IS assets
+/wMDevops/apps/softwareag/common/AssetBuildEn
+vironment/mbuild_ADSL_NONL
+ABE location for build and properties files for 
+ADSL_NONL
+/wMDevops/apps/softwareag/common/lib/testsuite
+location of the test suite jars
+
+
+4.0	INSTALLATION AND CONFIGURATION 
+4.1	GitLab Installation
+4.1.1	Pre-requisite
+
+>	Java 1.8 or later is installed.
+>	GITLab rpm files are downloaded for offline installation. 
+https://docs.gitlab.com/omnibus/manual_install.html
+>	RedHat yum local repository is updated with compatible version of redhat. (For offline 
+installation).
+
+4.1.2	Start the installation
+>	Go to repository location, where rpm is downloaded already.
+
+ 
+
+>	Run the command below to start the installation process:
+sudo yum install gitlab-ee-12.2.5-ee.0.el7.x86_64.rpm
+
+ 
+
+ 
+
+>	Modify the file /etc/gitlab/gitlab.rb for below
+
+-	external url (add the url)
+-	unicorn port
+-	git_data_dirs (uncomment and change the path)
+
+git_data_dirs({
+   "default" => {
+     "path" => "/wMDevops/apps/gitlab/git-data"
+    }
+ })
+
+ 
+
+>	Reconfigure the GitLab using command below:
+
+sudo gitlab-ctl reconfigure
+
+ 
+
+ 
+
+>	Add git user to eaisag group using the command below.
+
+sudo usermod -aG eaisag git
+
+ 
+
+
+>	Restart GITLab using command below:
+
+sudo gitlab-ctl restart
+
+ 
+
+>	To check the logs, run below command
+
+sudo gitlab-ctl tail
+
+>	Now, open the browser with the external port (port 80) as configured in above step and create 
+the password for default user root (manage@Fruit)
+http://10.11.251.31:80
+
+ 
+
+>	Login with the root user and the password as changed in earlier step.
+
+ 
+ 
+
+
+>	Done
+
+
+4.2	GitLab Configurations
+4.2.1	Create user
+To create a user, follow below steps:
+
+>	Login to the GITLab (if not already logged in) as root user or administrator. Create an 
+administrator user.
+
+ 
+
+>	Provide the details to create a user account.
+ 
+
+>	The newly created user will be visible under users
+
+ 
+
+>	If you login with the user first time, it will prompt to change the password.
+
+ 
+
+>	Done
+
+4.2.2	Create Groups
+To create a group, follow below steps:
+
+>	Login to the GITLab (if not already logged in) as root user or administrator. Go to Admin area, 
+make sure you are logged in as Administrator user.
+
+ 
+
+>	Go to Admin area> Groups > New group
+
+ 
+
+>	Provide all required details.
+
+ 
+
+>	Once group is created, add members/user to it.
+
+ 
+
+>	Once members are added, it can be seen as:
+ 
+
+>	Done
+4.2.3	Create Projects
+To create a project, follow below steps:
+
+>	Login to the GITLab (if not already logged in) as root user or administrator. Click on Create 
+Project.
+
+ 
+
+>	Provide the details of the project.
+
+ 
+
+>	Click on home page, it will show the project created
+ 
+
+>	Click on the project it will show more details.
+
+ 
+
+>	Done
+4.2.4	Add Branch
+To add branch, follow below steps:
+
+>	Follow below naming conventions, for creating the branches.
+
+Business Application: ADSL_NONL
+Branch 1: DEV_<< Business Application >> e.g. DEV_ ADSL_NONL
+Branch 3: PRD_<< Business Application >> e.g. PRD_ ADSL_NONL
+
+Note: The developers will not have push permission to any of the branches. For each project 
+change, new branch has to be created (e.g. PROJECT1_Branch). Once the changes are done 
+in the project branch, merge request to be created by developer to merge the newly created 
+branch into DEV_ ADSL_NONL or DEV_<< Business Application >>
+
+>	Login to the GITLab (if not already logged in) as root user or administrator. click on the + icon 
+and select New branch.
+
+ 
+
+>	Provide a name and click on Create branch.
+
+ 
+
+>	Similarly, create branches for all Business applications for DEV and PRD.
+-	ADSL_NONL
+-	ADSL_ONL
+-	CMPGN_EVM
+-	CMPGN_HK
+-	CMPGN_NONL
+-	EAIAPP_BATCH
+-	EAIAPP_CRITICAL
+-	EAIAPP_HK
+-	EAIAPP_LEGACY
+-	EAIAPP_LOG
+-	EAIAPP_NONL
+-	EAIONL_ONL
+-	OM_NONL
+-	OM_ONL
+
+ 
+ 
+
+>	Done.
+4.2.5	Protected Branch
+To set the branch in protected mode, follow below steps:
+
+>	Login to the GITLab (if not already logged in) as root user or administrator. Go to Project> 
+Settings> Repositories.
+ 
+
+>	Expand the protected branches
+
+ 
+
+>	Similarly, protect all the branches as created above with DEV_ and PRD_ . the status can been 
+as below
+
+ 
+
+>	Done
+
+4.2.6	Add Member to GITLab Project
+To add the member to GITLab project, follow below steps:
+
+>	Login to the GITLab (if not already logged in) as root user or administrator. Go to Projects > EAI 
+Integration >  Settings > Members.
+
+ 
+
+>	Once added, the group can be seen
+
+ 
+
+>	Done
+
+
+4.2.7	Webhook and secret key
+Webhook configurations are required to automate the code checkout job if any commit happens to 
+the GIT repository.
+
+>	First of all make sure that Jenkins job is created to do the code checkout. Select the option as 
+shown in below image and copy the webhook url to be used in GITLab. 
+
+ 
+
+>	Generate the secret token for webhook from Jenkins job.
+ 
+
+
+>	Login to GITLab and navigate to Admin area as shown in the image below:
+
+ 
+
+>	Go to Settings > Network 
+
+ 
+
+>	Add the IP of Jenkins to whitelist for webhook services.
+
+ 
+
+>	Now go to Now go to Project > Settings > Integrations
+
+ 
+
+>	Create the webhook by providing the details.
+
+ 
+
+>	Once webhook is created, it can be seen as:
+
+ 
+
+>	For testing the webhook, select the desired webhook and click on 'Test' with 'Push event' as 
+shown below.
+
+ 
+
+>	A message will be shown on GITLab with status as HTTP 200.
+
+ 
+
+>	Verify the related Jenkins job, it shall get triggered automatically.
+
+ 
+
+>	Done
+
+
+4.2.8	GitLab - Personal Access Token for Jenkins
+It is required to create a personal access token in Gitlab for the user to be used for communication 
+with Jenkins. In this case, user (Fruit) is used.
+
+>	To generate the GitLab personal access token, click on the user's menu available on "top right 
+corner of the page" as shown below, then click on Settings.
+
+         
+
+>	Select sudo, api for scope and click on 'Create personal access token'
+
+ 
+
+
+>	Save the access token
+
+ 
+
+Note down the generated personal access token as you wouldn't be able to access it again.
+This personal access token will be used in Jenkins, so till time keep it noted in a safe place.
+ 
+>	Done
+
+
+4.3	Jenkins Installation
+4.3.1	Pre-requisite
+
+>	Make Sure java 8 is installed.
+>	Download the rpm for offline installation http://pkg.jenkins-ci.org/redhat-stable 
+
+4.3.2	Installation Steps
+       
+       For installation, follow below steps:
+       
+>	Verify that java 8 or later is installed.
+
+ 
+
+>	Copy the downloaded Jenkins rpm file to the linux server.
+
+ 
+
+>	Run the command below to start the installation process.
+
+sudo yum install jenkins-2.164.3-1.1.noarch.rpm
+ 
+
+>	Run the command below to verify the installation process.
+
+sudo yum list installed |less |grep -i Jenkins
+ 
+
+>	Check that Jenkins war is installed under the default location /usr/lib/jenkins.
+
+ 
+
+>	Create the directories with all required permissions for the user.
+
+ 
+ 
+ 
+
+>	Create a backup of Jenkins file /etc/sysconfig/jenkins.
+
+ 
+
+>	Modify the Modify the file /etc/sysconfig/jenkins with (This is to set workspace and custom 
+directories):
+
+JENKINS_HOME="/wMDevops/apps/jenkins"
+JENKINS_JAVA_OPTIONS="-Djava.awt.headless=true -
+Djava.io.tmpdir=$JENKINS_HOME/tmp
+ 
+
+>	Add Jenkins user to eaisag group
+
+sudo usermod -aG eaisag Jenkins
+ 
+
+>	Edit the file /etc/rc.d/init.d/Jenkins after taking the backup. This is to set the custom directories.
+
+ 
+ 
+
+>	Reload configuration with below command 
+
+sudo systemctl daemon-reload
+ 
+
+>	Modify the confi.xml  file /wMDevops/apps/jenkins/config.xml to set the workspace and build 
+directory for Jenkins.
+
+ 
+
+>	Now, start the Jenkins server with below command:
+
+sudo systemctl start jenkins
+ 
+
+>	Get the password from the file /wMDevops/apps/jenkins/secrets/initialAdminPassword. Make 
+sure you have proper permissions to see the file (first time use only).
+
+ 
+
+>	Open the browser and login to Jenkins http://10.11.113.56:8080
+
+ 
+
+>	It will prompt for initial password, use the key as given in initialAdminPassword. Once you click 
+on continue, you get below screen.
+
+ 
+
+>	Choose the option, 'Skip Plugin Installations'
+
+ 
+
+>	Provide the user name and password for Jenkins Admin user. In this case, 
+Administrator/manage is used as default Admin user account creation.
+
+ 
+
+>	Provide the url if used other than IP addresses, click on save and finish.
+
+ 
+
+>	Click on 'Start using Jenkins' to start.
+
+ 
+
+>	The welcome page will look like below:
+
+ 
+
+>	Done
+
+
+
+4.3.3	Jenkins Plugins
+Jenkins plugins required to perform activities of specific types, for example to GitLab Hook for 
+automating the job incase of any event happens in GITLab (e.g. code check in, merge etc.).
+
+The Jenkins plugins to be downloaded offline as there is no internet connectivity from the Jenkins 
+host.
+
+>	Download the Jenkins war file in any of the windows machine where internet connectivity is 
+available from the Jenkins url e.g. http://mirrors.jenkins.io/war-stable/2.164.3
+
+>	Start the Jenkins server on local machine or server where internet connectivity available.
+
+>	Install below plugins in the local Jenkins server. (These will auto select all dependent plugins)
+
+-	GitHub Integration
+-	Pipeline
+-	Ant
+-	HTTP Request
+-	Prerequisite build step
+-	GitLab
+-	JUnit
+-	Build With Parameters
+-	Git Parameter
+-	Global Variable String Parameter
+-	Generic Webhook Trigger
+-	Pipeline: Multibranch
+-	Delivery Pipeline
+-	Email Extension
+-	Mailer
+-	Active Directory
+-	LDAP
+-	ACE Editor bundle
+
+>	Copy the plugins folder to the target Jenkins directory (winscp can be used to copy from 
+windows to linux server)
+From Local: C:\Users\Nelalfy\.jenkins\plugins
+To Target: /wMDevops/apps/jenkins/plugins
+
+>	Restart the Jenkins server.
+
+sudo systemctl stop jenkins
+sudo systemctl start Jenkins
+ 
+
+>	Login to Jenkins UI and verify that plugins are installed. Go to Jenkins>Manage Jenkins > 
+ManagePlugins>Installed
+
+ 
+
+>	Done
+
+
+4.3.4	GIT client on Jenkins server
+GIT client is required to perform activities like code checkin and checkout in GITLab.
+
+>	Download the latest version from https://mirrors.edge.kernel.org/pub/software/scm/git  e.g. git-
+2.23.0.tar.gz
+
+ 
+
+>	Copy it to the Linux server where Jenkins is installed.
+
+ 
+
+>	Run the command below to extract.
+
+cd /usr/src
+sudo tar -xvf /wMDevops/softwares/git_client/git-2.23.0.tar.gz
+ 
+
+
+>	It will extact under the folder git-2.23.0. Now go to the installation directory and compile the 
+code with below commads:
+
+cd /usr/bin/git-2.23.0
+sudo make prefix=/usr/local/git all
+ 
+
+>	Run the command to install
+
+sudo make prefix=/usr/local/git install
+ 
+
+
+>	Check the installation directory
+
+ 
+
+>	Verify the GIT client version.
+ 
+
+>	Done
+
+
+4.4	Jenkins Configurations
+4.4.1	Basic Configuration
+
+Perform basic Jenkins configurations.
+
+>	Click on Jenkins > Manage Jenkins > Global Tool Configuration.
+
+ 
+
+>	Add the parameters like below:
+-	JDK
+-	GIT
+-	ANT
+ 
+>	Done
+
+4.4.2	Credentials configurations
+       Navigate to Jenkins > Credentials > System > Global credentials (unrestricted) > Add Credentials. 
+
+>	Navigate to Jenkins > Credentials > System > Global credentials (unrestricted) > Add 
+Credentials
+ 		 
+
+>	Select Global credentials (unrestricted)
+ 
+
+>	Click on Add credentials.
+
+ 
+
+>	Provide the details of GITLab repository along with credentials.
+
+ 
+
+>	Configure GITLab token, note that this API token is generated from GITLab. Refer to section 
+"4.2.8	GitLab - Personal Access Token for Jenkins" of this document.
+
+ 
+
+>	Now, it will show the added credentials.
+
+ 
+
+>	Done
+
+4.4.3	SMTP Configurations
+       SMTP configuration is required to send email notifications. 
+
+>	Navigate to Jenkins > Manage Jenkins > System configurations
+
+ 
+
+>	Put values in the extended fields.
+
+ 
+
+>	Provide further details of when to trigger the emails etc.
+
+ 
+
+>	Done
+
+4.5	Jenkin Jobs
+The automation task is achieved by Jenkins jobs. At Fruit, below structure has been followed for 
+creating the Jenkins jobs.
+<<Folder - Business Application>>			=>	Example, ADSL_NONL
+ 
+      
+      
+      <<Jobs - BusinessApplication_{JobName}>> 	=>	Example, ADSL_NONL_build_abe
+        
+      
+      Pipeline View, gives more visibility on the overall progress of the jenkin jobs.
+      
+        
+      
+      
+Below is the list of Jenkin jobs created for Integration Server asset automation. all the jobs have 
+been configured as parameterized jobs
+      
+-	ADSL_NONL_build_abe
+-	ADSL_NONL_checkout_git
+-	ADSL_NONL_create_deployer_project
+-	ADSL_NONL_deploy_is_preprod
+-	ADSL_NONL_deploy_is_reference
+-	ADSL_NONL_deploy_is_test
+-	ADSL_NONL_identify_changes
+-	ADSL_NONL_PRD_build_abe
+-	ADSL_NONL_PRD_checkout_git
+-	ADSL_NONL_PRD_create_deployer_project
+-	ADSL_NONL_PRD_deploy_is_prod
+-	ADSL_NONL_PRD_identify_changes
+-	ADSL_NONL_rollback_is_all_env
+-	ADSL_NONL_unit_test_preprod
+-	ADSL_NONL_unit_test_reference
+-	ADSL_NONL_unit_test_test
+      
+
+4.5.1	{BusinessApplication}_checkout_git
+This Jenkins job will do the checkout from non-prod GITLab branch of a particular business 
+application i.e. DEV_{BusinessApplication}, example DEV_ADSL_NONL branch.  
+
+        
+       
+Post checkout, it will trigger another jenkins job to identify the changes i.e. 
+{BusinessApplication}_identify_changes , example ADSL_NONL_identify_changes.
+
+ 
+
+
+4.5.2	{BusinessApplication}_identify_changes
+Once the checkout from GITLab is done by job {BusinessApplication}/{BusinessApplication_ 
+checkout_git  e.g  ADSL/ADSL checkout_git, this job {BusinessApplication}_identify_changes e.g. 
+ADSL_NONL_identify_changes will be executed. This unix scripted Jenkins job will identify the 
+packages which are modified as part of last commit made in GITLab branch and will place the 
+modified packages into a different workspace directory uniquely identified by commitID. Below is the 
+script call and parameters passed to it.  
+
+/wMDevops/apps/cicd/scripts/getISChanges.sh ${checkoutPath} ${lastGITCommitID} 
+${BusinessApplication}/wMDevops/apps/cicd/scripts/getISChanges.sh ${checkoutPath} 
+${lastGITCommitID} ${BusinessApplication}
+
+        
+       
+As part of post processing action, it will trigger another jenkins job to create the build of changed 
+packages i.e. {BusinessApplication}_build_abe, example ADSL_NONL_build_abe.
+
+ 
+
+
+4.5.3	{BusinessApplication}_build_abe
+This Jenkins job {BusinessApplication}/{BusinessApplication}_ build_abe  e.g  
+ADSL/ADSL_build_abe will create the build.properties file at run time  based on the lastGITCommit. 
+It will call script below:
+==================================================================
+echo "lastGITCommitID: $lastGITCommitID"
+
+cp ${abeBuildDir}/REFERENCE_build.properties ${abeBuildDir}/build.properties
+
+deployerProjectName=`echo ${lastGITCommitID} | cut -c 1-10`_IS_${BusinessApplication}
+lastGItCommitIDWith10Char=`echo ${lastGITCommitID} | cut -c 1-10`
+
+echo "#Added parameters at run time for GIT Commit ID: ${lastGITCommitID}" >> ${abeBuildDir}/build.properties
+echo "build.output.dir=${WORKSPACE}/output/${lastGItCommitIDWith10Char}" >> ${abeBuildDir}/build.properties
+echo "build.source.dir=${BusinessApplicationWorkspace}/ISChanges/${lastGItCommitIDWith10Char}" >> 
+${abeBuildDir}/build.properties
+echo "build.archive.dir=${WORKSPACE}/archive/${lastGItCommitIDWith10Char}" >> ${abeBuildDir}/build.properties
+echo "build.log.fileName=${WORKSPACE}/logs/${lastGItCommitIDWith10Char}/build.log" >> ${abeBuildDir}/build.properties
+
+mkdir -p ${WORKSPACE}/output/${lastGItCommitIDWith10Char}
+mkdir -p ${WORKSPACE}/archive/${lastGItCommitIDWith10Char}
+mkdir -p ${WORKSPACE}/logs/${lastGItCommitIDWith10Char}
+
+
+echo "build.version=${lastGItCommitIDWith10Char}" >> ${abeBuildDir}/build.properties
+
+echo "automater.file=${abeBuildDir}/ProjectAutomatorForRepository_${BusinessApplication}.xml" >> 
+${abeBuildDir}/build.properties
+
+echo "proj.name=${deployerProjectName}" >> ${abeBuildDir}/build.properties
+echo "proj.map=${deploymentMap}" >> ${abeBuildDir}/build.properties
+echo "proj.dc=${deployCandidate}" >> ${abeBuildDir}/build.properties
+
+echo "Last 20 lines from file 
+/export/home/webmethods/wm101/common/AssetBuildEnvironment/master_build_${BusinessApplication}/build.properties"
+tail -20 ${abeBuildDir}/build.properties
+
+echo "---------- Finished ---------"
+==================================================================
+
+        
+       
+Post shell script, it will call ant script to create the build of changes packages followed by a shell 
+script to change the permissions on the assets created by last step.
+       
+==================================================================
+         chmod -R 777 ${WORKSPACE}/output/`echo ${lastGITCommitID} | cut -c 1-10` || exit 0
+         chmod -R 777 ${WORKSPACE}/archive/`echo ${lastGITCommitID} | cut -c 1-10` || exit 0
+         chmod -R 777 ${WORKSPACE}/logs/`echo ${lastGITCommitID} | cut -c 1-10` || exit 0
+==================================================================
+       
+        
+       
+As part of post processing action, it will trigger another jenkins job to create the deployer project i.e. 
+{BusinessApplication}_ create_deployer_project, example ADSL_NONL_ create_deployer_project
+
+ 
+
+4.5.4	{BusinessApplication}_create_deployer_project
+This Jenkins job job {BusinessApplication}/{BusinessApplication}_create_deployer_project  e.g  
+ADSL/ADSL_create_deployer_project  will create the build.properties and project automator files at 
+run time  based on the lastGITCommit.  
+It will call the shell script as below and will run the ant script to create the deployer project:
+
+/wMDevops/apps/cicd/scripts/customizeProjectAutomator.sh ${BusinessApplicationWorkspace} 
+${lastGITCommitID} ${BusinessApplication} ${buildWorkLocation}/output ${abeBuildDir}
+
+        
+       
+       
+As part of post processing action, it will trigger another jenkins job to deploy the changes into 
+reference server i.e. {BusinessApplication}_deploy_is_reference, example 
+ADSL_NONL_deploy_is_reference
+
+ 
+
+Post execution of this jobs, 
+it will create repository based on last GIT commitID like below:
+ 
+
+It will add IS remote servers automatically using a configuration file by unix shell script.
+ 
+
+It will create deployer project like below:
+ 
+
+Deployment set will be created like below:
+ 
+
+It will create deployment map as below:
+ 
+
+It will create the deployment candidate like below:
+ 
+
+
+4.5.5	{BusinessApplication}_deploy_is_reference
+This Jenkins job job {BusinessApplication}/{BusinessApplication}_deploy_is_reference  e.g  
+ADSL/ADSL_deploy_is_reference  will deploy the last commit changes into reference server.  
+It will call the shell script as below to create build.properties at run time and will run the ant script to 
+deploy on reference server
+
+/wMDevops/apps/cicd/scripts/createDeployBuildPropertiesFile.sh ${abeBuildDir} 
+${lastGITCommitID} ${BusinessApplication} ${buildWorkLocation} ${BusinessApplicationWorkspace} 
+${wm_env}
+
+        
+       
+Post build.properties file creation, it will check for any variable substitution file exits, if exits, it will 
+substitute at run time else it will not map the variable substitutions. 
+Below script is used to find variable substitution file.
+==================================================================
+LASTGITCOMMITID_10CHAR=`echo ${lastGITCommitID} | cut -c 1-10`
+typeset -u ENVIRONMENT_TO_DEPLOY=${wm_env}
+
+VAR_SUB_FILE=${BusinessApplicationWorkspace}/ISChanges/${LASTGITCOMMITID_10CHAR}/varsubs/${ENVIRONMEN
+T_TO_DEPLOY}_${BusinessApplication}_VarSubs.vs
+
+if [[ -f ${VAR_SUB_FILE} ]]
+then
+    exit 0;
+else
+    exit 1;
+fi
+==================================================================
+
+ 
+       
+As part of post processing action, it will trigger another jenkins job to execute the unit test cases into 
+reference server i.e. {BusinessApplication}_unit_test_reference, example 
+ADSL_NONL_unit_test_reference
+ 
+
+Post execution of this jobs,  it can be seen that rollback is active as deployment has happened in the 
+reference server.
+ 
+
+Post deployment the related assets to last commit will be deployed to reference server and can been 
+seen below (example only).
+ 
+
+
+4.5.6	{BusinessApplication}_unit_test_reference
+This Jenkins job job {BusinessApplication}/{BusinessApplication}_unit_test_reference  e.g  
+ADSL/ADSL_unit_test_reference  will execute the unit test cases into reference server.  
+It will call the shell script as below to create build-runtestsuite.properties at run time and will run the 
+ant script to execute the unit  test cases (if available) on reference server
+
+/wMDevops/apps/cicd/scripts/createTestSuiteProperties.sh ${abeBuildDir} ${lastGITCommitID} 
+${BusinessApplication} ${buildWorkLocation} ${BusinessApplicationWorkspace} ${wm_env} 
+${WORKSPACE}
+        
+       
+As part of post processing action, it will publish Junit test cases for reference server followed by an 
+email notification for deployment into next env based on last GIT commitID and approval.
+ 
+
+The content used for triggering email used is as below:
+==================================================================
+Dear Approver,
+
+Last GIT commit ID ${lastGITCommitID} is deployed and tested successfully in ${BusinessApplication}  ${wm_env} Server.
+Use below link to approve and promote the changes for ${lastGITCommitID}  into next environment ${next_wm_env}. 
+
+(REFERENCE -> TEST -> PREPROD -> PROD)
+
+Note: Make sure to use the commit ID (${lastGITCommitID}) and correct environment while approving/rejecting the 
+deployment.
+
+http://10.11.113.56:8080/job/${BusinessApplication}/job/${BusinessApplication}_deploy_is_${next_wm_env}/build
+
+Use parameter below to initiate the deployment.
+checkoutPath=${checkoutPath}
+lastGITCommitID=${lastGITCommitID}
+BusinessApplication=${BusinessApplication}
+BusinessApplicationWorkspace=${BusinessApplicationWorkspace}
+abeBuildDir=${abeBuildDir}
+abeBuildScript=${abeBuildScript}
+wm_env=test
+next_wm_env=preprod
+executeUnitTest=${executeUnitTest}
+buildWorkLocation=${buildWorkLocation}
+approval=Approved
+
+
+Regards,
+DevOps Team
+Fruit
+==================================================================
+ 
+
+The result of unit test cases will be below:
+ 
+
+ 
+
+The email triggered by this job will look like below, it will have a link for next environment deployment 
+along with the details of required parameter values:
+
+ 
+
+Once, the user clicks on the link she/he will be directed to Jenkins job to deploy into next 
+environment. It will look like below along with approval option to approve or reject:
+
+ 
+
+4.5.7	{BusinessApplication}_deploy_is_test
+This Jenkins job {BusinessApplication}/{BusinessApplication}_deploy_is_test  e.g  
+ADSL/ADSL_deploy_is_test  will deploy the last commit changes into test server.  
+
+Note: the backend scripts and flows are same as of the 
+{BusinessApplication}/{BusinessApplication}_deploy_is_reference  e.g  
+ADSL/ADSL_deploy_is_reference except for the run time parameter for wm_env=test and 
+next_wm_env=preprod variables and approval. Refer to this jenkin job for its code or build details.  
+
+ 
+
+4.5.8	{BusinessApplication}_unit_test_test
+This Jenkins job {BusinessApplication}/{BusinessApplication}_unit_test_test  e.g  
+ADSL/ADSL_unit_test_test  will execute the unit test cases for the last commit changes into test 
+server.  
+
+Note: the backend scripts and flows are same as of the 
+{BusinessApplication}/{BusinessApplication}_unit_test_reference  e.g  
+ADSL/ADSL_unit_test_reference except for the run time parameter for wm_env=test and 
+next_wm_env=preprod variables. Refer to this jenkin job for its code or build details.  
+
+4.5.9	{BusinessApplication}_deploy_is_preprod
+This Jenkins job {BusinessApplication}/{BusinessApplication}_deploy_is_preprod  e.g  
+ADSL/ADSL_deploy_is_preprod  will deploy the last commit changes into preprod server.  
+
+Note: the backend scripts and flows are same as of the 
+{BusinessApplication}/{BusinessApplication}_deploy_is_reference  e.g  
+ADSL/ADSL_deploy_is_reference except for the run time parameter for wm_env=preprod and 
+next_wm_env=prod variables and approval. Refer to this jenkin job for its code or build details.  
+
+4.5.10	{BusinessApplication}_unit_test_preprod
+This Jenkins job {BusinessApplication}/{BusinessApplication}_unit_test_preprod  e.g  
+ADSL/ADSL_unit_test_preprod  will execute the unit test cases for the last commit changes into test 
+server.  
+
+Note: the backend scripts and flows are same as of the 
+{BusinessApplication}/{BusinessApplication}_unit_test_reference  e.g  
+ADSL/ADSL_unit_test_reference except for the run time parameter for wm_env=test and 
+next_wm_env=preprod variables. Refer to this jenkin job for its code or build details.  
+
+
+4.5.11	{BusinessApplication}_PRD_checkout_git
+This Jenkins job {BusinessApplication}/{BusinessApplication}_PRD_checkout_git  e.g  
+ADSL/ADSL_PRD_checkout_git  will checkout the code from production branch of a particular 
+business application i.e. PRD_{BusinessApplication}, example PRD_ADSL_NONL branch.  
+
+Note: the backend scripts and flows are same as of the 
+{BusinessApplication}/{BusinessApplication}_checkout_git  e.g  ADSL/ADSL_checkout_git except for 
+the PRD branch. Refer to this jenkin job for its code or build details.  
+
+4.5.12	{BusinessApplication}_PRD_identify_changes
+This Jenkins job {BusinessApplication}/{BusinessApplication}_PRD_identify_changes  e.g  
+ADSL/ADSL_PRD_identify_changes  will identify the changes happened as part of last GIT commit 
+in PRD branch.  
+
+Note: the backend scripts and flows are same as of the 
+{BusinessApplication}/{BusinessApplication}_identify_changes  e.g  ADSL/ADSL_identify_changes 
+except for the wm_env. Refer to this jenkin job for its code or build details.  
+
+4.5.13	{BusinessApplication}_PRD_build_abe
+This Jenkins job {BusinessApplication}/{BusinessApplication}_PRD_build_abe  e.g  
+ADSL/ADSL_PRD_build_abe  will create the build using ABE of the changes happened as part of 
+last GIT commit in PRD branch.  
+
+Note: the backend scripts and flows are same as of the 
+{BusinessApplication}/{BusinessApplication}_build_abe  e.g  ADSL/ADSL_build_abe except for the 
+wm_env. Refer to this jenkin job for its code or build details.  
+
+4.5.14	{BusinessApplication}_PRD_create_deployer_project
+This Jenkins job {BusinessApplication}/{BusinessApplication}_PRD_create_deployer_project  e.g  
+ADSL/ADSL_PRD_create_deployer_project  will deploy the build of the changes happened as part 
+of last GIT commit in PRD branch.  
+
+Note: the backend scripts and flows are same as of the 
+{BusinessApplication}/{BusinessApplication}_create_deployer_project e.g  
+ADSL/ADSL_create_deployer_project except for the wm_env. Refer to this jenkin job for its code or 
+build details.  
+
+4.5.15	{BusinessApplication}_PRD_deploy_is_prod
+This Jenkins job {BusinessApplication}/{BusinessApplication}_PRD_deploy_is_prod  e.g  
+ADSL/ADSL_PRD_PRD_deploy_is_prod  will deploy the build of the changes happened as part of 
+last GIT commit in PRD branch.  
+
+Note: the backend scripts and flows are same as of the 
+{BusinessApplication}/{BusinessApplication}_deploy_is_prod e.g  ADSL/ADSL_deploy_is_prod 
+except for the wm_env. Refer to this jenkin job for its code or build details.  
+
+4.5.16	{BusinessApplication}_rollback_is_all_env
+This Jenkins job {BusinessApplication}/{BusinessApplication}_rollback_is_all_env  e.g  
+ADSL/ADSL_rollback_is_all_env  will rollback the given GIT commitID changes from a given 
+environment. It is a common job for both prod and non-prod.  
+It will call the shell script as below to create build.properties at run time and will run the ant script to 
+rollback the changes of a given GIT commit ID.
+
+==================================================================
+checkoutPath=/wMDevops/apps/cicd/workspace/ADSL_NONL/ADSL_NONL_checkout_git
+BusinessApplication=ADSL_NONL
+BusinessApplicationWorkspace=/wMDevops/apps/cicd/workspace/ADSL_NONL
+abeBuildDir=/wMDevops/apps/softwareag/common/AssetBuildEnvironment/mbuild_ADSL_NONL
+buildWorkLocation=/wMDevops/apps/cicd/workspace/ADSL_NONL/ADSL_NONL_build_abe
+
+/wMDevops/apps/cicd/scripts/createDeployBuildPropertiesFile.sh ${abeBuildDir} ${lastGITCommitID} ${BusinessApplication} 
+${buildWorkLocation} ${BusinessApplicationWorkspace} ${wm_env}
+==================================================================
+
+        
+       
+       While running the build for rollback, it will ask for below parameters
+        
+
+4.5.17	Jenkins jobs execution
+The jobs are automated to execute whenever there is any code checked into GITLab repository in 
+branch of a particular business application i.e. DEV_{BusinessApplication} or 
+PRD_{BusinessApplication}, example DEV_ADSL_NONL or PRD_ADSL_NONL branch  and 
+continue the flow.
+
+4.6	ABE Installation 
+4.6.1	Installation Steps
+Follow below steps for installation of ABE
+
+>	Make sure to download all required binaries to install the products. Make sure to change mode 
+of the executable of the installer file.
+
+ 
+>	Verify that java is installed.
+
+ 
+
+>	Run the installer with below command
+./SoftwareAGInstaller20190416-LinuxX86.bin -readImage 
+/wMDevops/softwares/SAG_DevOps_Image103_linux.zip
+
+ 
+
+>	Provide the installation dir as /wMDevops/apps/softwareag
+
+ 
+
+>	Choose option 2 for Asset Build Environment, it will autoselect all required components. Say Y to 
+select dependents
+
+ 
+
+>	Select Deployer and say Y auto select the dependents
+
+ 
+
+>	Accept the license agreement and say yes to sudo access. Provide the license key
+
+ 
+
+>	Provide the ports details and register as daemon, and select the embedded DB.
+
+ 
+
+>	Continue with default ports for SPM
+ 
+
+>	Start the Integration Server, Go to /wMDevops/apps/softwareag103/profiles/IS_default/bin and 
+run the Integration Server.
+
+ 
+
+>	Login to the url with given port (default port used in this case)
+
+ 
+
+>	Verify the Deployer is installed.
+ 
+
+>	Verify that ABE is installed
+
+
+4.6.2	Directory Structure Configuration
+The directory structure under ABE for master_build will be as follow:
+
+/wMDevops/apps/softwareag/common/AssetBuildEnvironment/mbuild_${ BusinessApplication}
+For example,
+/wMDevops/apps/softwareag/common/AssetBuildEnvironment/mbuild_ADSL_NONL
+
+The configuration files under mbuild_${ BusinessApplication} will be as follow:
+1.	REFERENCE Config/Script Files
+Reference config files are the files which will be used for creating the actual configuration files 
+having runtime parameters (e.g Project name in Deployer like '1a3edd10cd_IS_ADSL_NONL') 
+for ABE automated deployment.
+
+-	REFERENCE_build.properties
+
+
+2.	ACTUAL Config/Script Files
+These files are actually used at runtime by ABE and projecautomator for automated deployment.
+
+-	build.properties
+-	ProjectAutomatorForRepository_Core.xml
+-	build.xml
+-	build-runtestsuite.xml
+-	build-runtestsuite.properties
+
+
+4.7	Configurations for Automated Unit Testing
+4.7.1	Configurations on Reference Server
+There are few configurations required on the reference sever from where the unit test cases are to 
+be executed either on remote server or reference server itself.
+-	If the Unit test cases are using mocking capability, then the remote server should have 
+WmServiceMock package installed.
+-	All the required jars to be placed under /wMDevops/apps/softwareag/common/lib/testsuite:
+o	commons-jxpath-1.2.jar
+o	hamcrest-core.jar
+o	httpunit.jar
+o	junit.jar
+o	serviceInterceptor.jar
+o	serviceMockClient.jar
+o	wmjxpath.jar
+o	xmlunit1.0.jar
+     
+    
+-	Below Ant/shell scripts to be placed for automated execution of test cases.
+o	Unix Scripts under /wMDevops/apps/cicd/scripts:
+?	createTestSuiteProperties.sh
+o	Ant Scripts and configuration files under 
+/wMDevops/apps/softwareag/common/AssetBuildEnvironment/mbuild_ADSL_NONL:
+?	build-runtestsuite.properties  // it will be generated at runtime.
+?	build-runtestsuite.xml
+
+4.7.2	Configurations on Remote Server
+There are no special configurations required on the remote sever where the unit test cases are to be 
+executed.
+-	 If the Unit test cases are using mocking capability, then the remote server should have 
+WmServiceMock package installed.
+
+4.8	How to add new Business Application in Automation 
+
+4.8.1	Add Jenkins Jobs
+Follow below steps for adding a new business application in Jenkins
+
+>	Go to Jenkins job dir /wMDevops/apps/jenkins/jobs.
+cd /wMDevops/apps/jenkins/jobs
+ 
+
+>	Create a copy of Business application folder for target, e.g. from ADSL_NONL to ADSL_ONL
+cp -pR ADSL_NONL ADSL_ONL
+ 
+
+>	Go inside the target directory e.g. ADSL_ONL
+cd ADSL_ONL
+ 
+
+>	Run the command below to replace the values of ADSL_NONL to target ADSL_ONL
+sed -i 's/ADSL_NONL/ADSL_ONL/g' config.xml
+ 
+
+>	Verify with grep command if the target name is replaced.
+grep ADSL_ONL config.xml
+ 
+
+>	Go inside jobs dir.
+cd jobs
+ 
+
+>	Run the commands below (make sure to modify the paramters)
+for JENKINS_JOB in `ls`;   
+do  
+sudo rm -rf ./${JENKINS_JOB}/builds;   
+sudo rm -rf ./${JENKINS_JOB}/nextBuildNumber;
+ sudo sed -i 's/ADSL_NONL/ADSL_ONL/g' ./${JENKINS_JOB}/config.xml; 
+ NEW_JENKINS_JOB=`echo ${JENKINS_JOB} |sudo  sed -e 's/ADSL_NONL/ADSL_ONL/g'`;
+ sudo mv  ./${JENKINS_JOB} ./${NEW_JENKINS_JOB};  
+ done
+ 
+
+>	Run the command below to verify that on occurrences of old business application exists.
+find . -type f |xargs grep -i ADSL_NONL
+ 
+
+>	Verify that folder names are also changed with target application name e.g. ADSL_ONL
+ 
+
+>	Restart the Jenkins server
+sudo systemctl restart Jenkins
+ 
+
+>	Verify business application folder from Jenkins UI
+ 
+
+>	Verify Jenkins jobs inside target folder.
+ 
+
+>	Done
+4.8.2	Add ABE artifacts
+Follow below steps for ABE changes
+
+>	Go to the directory /wMDevops/apps/softwareag/common/AssetBuildEnvironment
+
+>	cd /wMDevops/apps/softwareag/common/AssetBuildEnvironment
+ 
+
+>	Create a copy of 
+cp -pR mbuild_ADSL_NONL mbuild_ADSL_ONL
+ 
+
+>	Go inside the directory, e.g. mbuild_ADSL_ONL
+cd mbuild_ADSL_ONL
+
+>	Delete the files below (otherwise they might cause permission issue while running the jenkins 
+jobs).
+
+rm -rf build.number build.properties build.properties.ascii build-runtestsuite.properties build-
+runtestsuite.properties_old ProjectAutomatorForRepository_ADSL_NONL.xml 
+ProjectAutomatorForRepository_ADSL_NONL.xml_old
+ 
+
+>	Done
+
+4.8.3	Shell Scripts configuration
+Follow below steps for shell scripts configuration
+
+>	Go to the config directory of scripts i.e. /wMDevops/apps/cicd/scripts/config/
+cd /wMDevops/apps/cicd/scripts/config/
+ 
+
+>	Create a copy of config file for target
+cp ADSL_NONL_customizeProjectAutomator.cfg ADSL_ONL_customizeProjectAutomator.cfg
+ 
+
+>	Modify the config file ADSL_ONL_customizeProjectAutomator.cfg with correct servers related to 
+the business application.
+
+>	Done
+
+4.8.4	webhook configuration
+Follow below steps for webhook configuration
+
+>	For webhook configuration, follow section "4.2.7 Webhook and secret key" of this document.
+
+>	Done
+
+5.0	REFERENCES 
+5.1	SoftwareAG References
+       
+       Below are the references to SoftwareAG guides or documents:
+>	10-3_Deployer_Users_Guide.pdf
+>	10-3_Unit_Test_Framework.pdf
+>	10-3_Integration_Server_Administrators_Guide.pdf
+       
+5.2	General References
+
+       Below are the references to general documents or links:
+>	https://jenkins.io/doc/
+>	https://jenkins.io/user-handbook.pdf
+>	https://docs.gitlab.com/ee/README.html
+>	https://medium.com/@teeks99/continuous-integration-with-jenkins-and-gitlab-fa770c62e88a
+>	https://tecadmin.net/tutorial/git-tutorial/git-install-client/
+>	https://mirrors.edge.kernel.org/pub/software/scm/git/
+
+
+
+
+
+
+
+
+5.3	Scripts and Files used 
+
+       Below are the scripts and files used for this DevOps Implementation:
+Type
+Script/Config File Name
+Sample File
+Unix Scripts and config
+customizeProjectAutomator.sh
+  
+
+getISChanges.sh
+  
+
+createTestSuiteProperties.sh
+  
+
+config/ADSL_ONL_customizeProjectAutomator.cfg
+ 
+ 
+ 
+ 
+Reference properties
+REFERENCE_build.properties
+  
+ 
+ 
+ 
+ 
+Reference ANT script
+build.xml
+  
+
+build-runtestsuite.xml
+  
+ 
+ 
+ 
+Properties files at run time
+build.properties
+  
+
+build-runtestsuite.properties
+  
+ 
+ 
+ 
+Ant Scripts at run time
+ProjectAutomatorForRepository_ADSL_NONL.xml
+  
+ 
+ 
+ 
+Jenkins Jobs
+zip of the folder ~jenkins/jobs
+  
+
+
+1	(c)2019 IBM. All rights reserved.
+
+                    
+
+
+
+

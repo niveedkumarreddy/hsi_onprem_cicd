@@ -1,0 +1,858 @@
+
+
+
+
+
+
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+DEVOPS DEVELOPER GUIDE
+	
+		
+Version 1.0  | October 2019
+
+
+Table of Contents
+
+1.0	Revision History	4
+2.0	Introduction	5
+2.1	Purpose of this document	5
+2.2	Audience	5
+2.3	In-scope	5
+2.4	Out-of-scope	6
+3.0	DevOPS	7
+3.1	Overview	7
+3.2	Continuous Integration (CI)	7
+3.3	Continuous Delivery (CD)	8
+3.4	Continuous Deployment	9
+3.5	Logical View - how does it work	10
+3.6	Logical Flow	12
+3.7	Reference Architecture	13
+3.8	Recommended GIT structure	13
+4.0	Installation and configuration	15
+4.1	Local Service Development	15
+4.1.1	Pre-requisite	15
+4.1.2	Installation Steps	15
+5.0	Working with GITLAb Repository	23
+5.1	GitLab Configurations	23
+5.1.1	Pre-requisite	23
+5.1.2	GITLab directory structure	23
+5.1.3	GITLab Branches	24
+5.2	New Service Development	25
+5.2.1	Code Checkout from GITLab	25
+5.2.2	Working with new branch in local GIT repository	31
+5.2.3	Starting New Development	32
+5.2.4	Pushing Code to GITLab	37
+5.3	Existing Service Modification	42
+5.3.1	Code Checkout from GITLab	42
+5.3.2	Working with new branch in local GIT repository	42
+5.3.3	Modifying existing code	42
+5.3.4	Pushing Code to GITLab	47
+5.4	Creating branch merge request	48
+5.4.1	Create merge request in remote GITLab	48
+5.4.2	Approving the merge request	49
+6.0	webmethods unit test framework	52
+6.1	Installations and Configurations	52
+6.1.1	Installation	52
+6.1.2	Configuration & Verification	52
+6.2	Unit Test Case Structure	53
+6.2.1	Test case structure	53
+6.3	Unit Test Case Creation	54
+6.3.1	Unit Test Case Creation using Designer	54
+6.3.2	Mocking the Unit Test Cases	63
+6.3.3	Executing Unit Test Cases	65
+7.0	References	66
+7.1	SoftwareAG References	66
+7.2	General References	66
+
+ 
+1.0	REVISION HISTORY
+Versio
+n 
+Numbe
+r
+Date
+Revision History
+Author
+0.1 
+(draft)
+22/10/2018
+Draft Version
+Hukam Singh Bairwa
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+2.0	INTRODUCTION
+2.1	Purpose of this document
+
+Fruit Egypt is using Software AG's webMethods platform for mission critical enterprise 
+integrations for both internal and external data exchanges. This landscape has grown over a 
+period with more interfaces and system adapters were being added to the platform regularly, 
+making it challenging to manage the delivery of integration projects. With changing business 
+and I.T landscape, is looking for an effective continuous delivery and automation setup to 
+reduce time to on-board integration solutions and improve quality of deliverables through 
+automated testing and deployment. 
+
+They key objectives of this setup are,
+
+?	To reduce delivery timelines and improve quality of deliverables by adopting automated 
+quality checks and end-to-end deployment process.
+
+?	To reduce friction between DEV, Ops and QA teams for deployments and release 
+management thereby creating a DevOps delivery approach.
+
+?	To establish an automated, reliable, repeatable integration projects delivery mechanism that 
+supports agile delivery of integration projects.
+
+?	To minimize the deployment errors generally caused with human intervention during he 
+process of deploying the assets.
+
+?	To provide an easy rollback mechanism.
+2.2	Audience
+
+*	WebMethods Developers.
+*	Development Managers.
+*	Technical architect
+2.3	In-scope
+
+This document describes the recommended CI/CD development process for Fruit Egypt. Below 
+are the activities which are in scope for the current CI/CD development process.
+-	Explains about how to check-in/checkout the code into git repository (GITLAB) for IS.
+-	Explains how to install test suite on Designer 
+-	Necessary configurations for test Suite
+-	Guidelines of creating test-suites and mocking for test cases
+
+2.4	Out-of-scope
+
+*	Standard build and test tool such as Ant and Junit.
+*	License and support of any non-SAG tools.
+
+
+
+ 
+3.0	DEVOPS
+3.1	Overview 
+
+The need for DevOps arose from the increasing success of agile software development, as that 
+led to organizations wanting to release their software faster and more frequently. As they sought 
+to overcome the strain this put on their release management processes, they had to adopt 
+patterns such as application release automation, continuous integration tools, and continuous 
+delivery.
+
+      
+
+
+ 
+3.2	Continuous Integration (CI)
+They goal of CI is to provide rapid feedback so that if a defect is introduced into the code 
+base, it can be identified and corrected as soon as possible. CI means that one developer 
+who writes code on his laptop at home, and another dev who codes on her desktop in the office 
+can both write software for the same product separately, integrate their changes together in a 
+place called the source repository. They can then build the combined software from the bits they 
+each wrote and test that it works the way they expect.
+CI requires that all developers have self-testing code. This is code that tests itself to ensure that 
+it is working as expected, and these tests are often called unit tests. When all the unit tests pass 
+after the code is integrated and will get a green build. This indicates that they have verified that 
+their changes are successfully integrated together, and the code is working as expected by the 
+tests. However, while the integrated code is successfully working together, it is not yet ready for 
+production because it has not been tested and verified as working in production-like 
+environments. To be practicing CI, developers must check-in to the main source repository, 
+integrate and test their code frequently and often. Usually many times an hour, but at a 
+minimum once a day.
+
+ 
+         
+
+3.3	Continuous Delivery (CD)
+Continuous Delivery means that each time developers changes to the code, integrates and 
+builds the code, that they also automatically test this code on environments that are very similar 
+to production. We call this progression of deploying to - and testing on - different environments 
+a deployment pipeline. Often the deployment pipeline has a development environment, a test 
+environment, and a staging environment, but these stages vary by the team, product and 
+organization.
+
+
+   	        
+
+3.4	Continuous Deployment
+This is a practice where every change that developers make, and which passes all the test 
+stages, automatically goes to production. Some companies do this, and others do not. To 
+achieve continuous deployment, you first need to get to continuous delivery, so it's not a priority 
+to decide which is better for you until you've starting practicing CD
+
+		
+
+3.5	Logical View - how does it work
+It is important to have a build server for practicing CI. It is equally important that either unit tests 
+or integration tests are treated as codebase and checked in to the VCS so that they can be 
+tested during CI process. Also, CI Process should have the dash boarding capability to show the 
+code review and test reports.
+
+             
+
+       Below are the high-level steps in the continuous integration process.
+
+1.	Checkin the assets from the developer's local designer to VCS (Git Lab)
+
+2.	Developers must daily update their local repository from VCS (Git Lab) before making changes to the 
+code. This will ensure everyone is working on the latest copy of the code
+
+3.	Jenkins Job will checkout the code on the scheduled manner
+
+4.	Using Software AG's asset build environment and deployer scripts, Jenkins will create the build and 
+deploys to the Target server.
+
+5.	Unit test cases are executed on the deployed assets and reports will be shared with relevant stake 
+holders
+
+6.	If the build is stable with the desired quality, it will be promoted to the higher environments 
+(Test/PreProd/PROD)
+
+
+
+
+
+
+
+3.6	Logical Flow
+
+
+ 
+
+
+3.7	Reference Architecture
+
+Below is the high-level diagram which depicts the CI/CD environment setup for Fruit Egypt.
+            
+ 
+
+3.8	Recommended GIT structure
+
+Git repository is a web-based hosting service, which offers all of the distributed version control and source 
+code management (SCM) functionality. 
+
+This is completely is different from SVN, GIT works on local repository concept. You will always have two 
+repositories one is local repository and another one is Remote repository. 
+
+It is not possible to pull individual assets from repository either local or remote to your workspace. The 
+only possibility is to make the workspace as your local repository. E.g. In case of local development, for 
+working with IS packages, it is mandatory to make the packages folder as your local repository. 
+    
+ESB 
+Branch to maintain all IS assets 
+MWS 
+Branch to maintain all MWS assets 
+BPM 
+Branch to maintain all BPM assets 
+TN 
+Branch to maintain all TN assets 
+UM 
+Branch to maintain all UM assets 
+       
+Example, 
+ 
+There are some general instructions w.r.t Fruit business cases for DevOps branches.
+?	There will be two working branches i.e. one for non-prod (DEV_<BusinessApplication> e.g 
+DEV_EAIONL_ONL) and one for prod (PRD_<BusinessApplication> e.g PRD_EAIONL_ONL).
+?	Always checkout code from Production branch PRD_<BusinessApplication> e.g 
+PRD_EAIONL_ONL.
+?	The developers can't merge directly to any of the branches i.e. non-prod and prod.
+?	The developers need to push the changes are a new branch can be named based on the projects 
+working on to easily co-relate. For example, branch name like Project_Upgrade_Phase1
+?	The developers need to raise merge request on the non-prod branch first. Post testing in all non-
+prod environments, the project branch can be merged (with merge request) in production branch 
+to deploy the changes.
+?	Never merge into an environment branch unless you are ready to deploy to that environment.
+?	Perform a diff between branches before merging-this can help prevent merging something that 
+wasn't intended and can also help with writing release notes.
+4.0	INSTALLATION AND CONFIGURATION 
+4.1	Local Service Development
+4.1.1	Pre-requisite
+
+>	Make Sure java 8 is installed.
+>	Installer and image file is already downloaded.
+>	License file is available.
+
+4.1.2	Installation Steps
+       
+       For installation, follow below steps:
+       
+>	Start the Installer using administrator user on the machine where local service development 
+installation is expected.
+
+ 
+
+
+>	Go to Advanced > Images> install from image> Browse (select the image file of windows).
+
+ 
+
+>	Select ok and, click next. Choose the installation dir
+
+ 
+
+>	Choose the options below "Local version control Integration". It will auto select the 
+dependents.
+
+ 
+
+>	Provide the license key and port details.
+
+ 
+
+>	Keep the database as Embedded. Uncheck the SPM installation for CCE.
+
+ 
+
+
+>	Choose the license key for Unit Test framework
+
+ 
+
+>	Verify the list of components and click on Next.
+
+ 
+
+>	Start the Integration Server via services.
+
+ 
+
+>	Open the browser to check IS admin page on localhost http://localhost:5555/
+
+ 
+
+>	Open the Designer as Administrator user.
+
+ 
+
+>	Change the workspace to something else or continue with default workspace.
+
+ 
+
+>	Verify the license key. Go to Windows > Preferences> Software AG> webMethods 
+TestSuite>License
+
+ 
+
+>	Go to service development perspective and verify the default local IS instance is connected.
+ 
+
+>	Done
+
+
+5.0	WORKING WITH GITLAB REPOSITORY 
+5.1	GitLab Configurations
+5.1.1	Pre-requisite
+
+>	Make sure project is already created in GITLAB and developers are having proper permissions 
+to work.
+5.1.2	GITLab directory structure
+>	Below is the GIT structure to be followed for each business application:
+
+ 
+
+>	Done
+
+5.1.3	GITLab Branches
+>	Below is the naming convention followed for each business application/unit GIT branches.
+
+Business Application: ADSL_NONL
+Branch 1: DEV_<< Business Application >> e.g. DEV_ ADSL_NONL
+Branch 3: PRD_<< Business Application >> e.g. PRD_ ADSL_NONL
+
+Note: The developers will not have push permission to any of the branches. For each project 
+change, new branch must be created (e.g. PROJECT1_Branch) from production branch e.g. e.g. 
+PRD_ ADSL_NONL. Once the changes are done in the project branch, merge request to be 
+created by developer to merge the newly created branch into DEV_ ADSL_NONL or DEV_<< 
+Business Application >>
+
+>	Login to the GITLab (if not already logged in) as developer user.
+
+ 
+
+>	Open the project created for EAI Integration and copy the url (from clone option) for 
+accessing/connecting GIT from webMethods Designer.
+
+ 
+
+
+5.2	New Service Development
+       To develop new service, follow below steps.
+5.2.1	Code Checkout from GITLab
+To Check out the code, follow below steps:
+>	Open the Designer using Administrator user if not already opened.
+
+ 
+
+>	Click on Windows>Perspective>Open Perspective> Others>Git.
+
+ 
+
+ 
+
+>	Clone the GIT repository
+
+ 
+
+>	The values will be auto filled from the clipboard, if not then paste the url. Provide the developer's 
+username/password.
+
+ 
+
+>	It will list all the branches, select the one on which you want to wok on for the specific business 
+application, make sure to use only PRD branches to checkout the code.
+ 
+
+>	Provide the location of the local machine where the GIT repository will be cloned from remote 
+repository. Finally, click on Finish. Provide the GITLab credentials if asked.
+
+ 
+
+>	The package structure will be like below for GIT.
+
+ 
+
+>	Done
+
+5.2.2	Working with new branch in local GIT repository
+Now, as we already did code checkout from remote GITLab repository to local GIT repository, we 
+are ready to work further now with a new local branch, follow below steps:
+
+>	Checkout a new branch reflecting the Project Code or changes e.g.  
+ADSL_NONL_Proj_SplitDomain_01. For doing this, go to repository > Branches>Local> right 
+click on Local >SwitchTo > New Branch.
+
+ 
+
+>	Provide the required information and Finish.
+
+ 
+
+>	It shows the new branch, make sure the newly created branch is selected.
+ 
+
+>	Done
+
+5.2.3	Starting New Development
+Once we are done with the local GIT branch, we are ready to develop new services as we do 
+usually:
+
+>	Open the Designer (as administrator) and create all required assets like packages, folders, 
+services etc.
+
+>	Once done with the development, right click on the package and select "Create Local Service 
+Development Project". If due to any reason local service development is not visible, try to 
+change the network proxy and run cleanup the workspace or use a new designer workspace.
+
+ 
+
+>	Say Ok to the message as we just refreshed the branch.
+
+ 
+
+>	Browse to the location where the GitLab repository structure available. This is the same location 
+which was used to configure Local GIT repository.
+
+ 
+ 
+
+
+>	It will set the Working tree as below, now click on Browse to select path within repository.
+
+ 
+
+>	Now select the target path as packages to store the developed package.
+
+ 
+ 
+>	It will look like below after selection.
+
+ 
+
+>	The package name will have a symbol of small circle with a dot inside. Also, the assets inside 
+package will show up with a question mark.
+
+ 
+
+>	Go to resource view in the Designer,
+
+ 
+
+>	Project can be seen with question mark.
+
+ 
+
+>	Done
+       
+5.2.4	Pushing Code to GITLab
+Once the new service development or existing code change is done, follow below steps to push the 
+code into Remote GIT repository:
+
+>	Go to GIT view in Designer > Windows>Perspective>Open Perspective> Others>Git
+
+ 
+
+>	Click on "Git Staging" tab, you will notice some files are automatically added  under "Unstaged 
+changes" as part of our recent activities
+
+ 
+
+>	Right click on the working tree and click on add to index, it will move the changes to staged.
+
+ 
+
+>	Now, the changes will be moved to staged changes. Provide a Commit message and then click 
+on commit and push.
+
+ 
+
+>	Verify the branch name and click on next
+
+ 
+
+>	Provide the user credentials of the remote GIt repository.
+
+ 
+
+>	Click on the push confirmation
+
+ 
+
+>	It will again prompt for the user and password of the remote GIt.
+
+ 
+
+>	The final message be pushed.
+
+ 
+
+>	Login to GITLab and verify if the branch is created having Demo package.
+
+ 
+
+>	The Demo package can also be seen
+
+ 
+
+>	You are done with code push to remote GITLab repository. Now, follow the merge request 
+process for newly developed code.
+
+>	Done
+       
+
+5.3	Existing Service Modification
+       To modify existing service, follow below steps.
+5.3.1	Code Checkout from GITLab
+Refer to section 5.2.1 "Code Checkout from GITLab"
+5.3.2	Working with new branch in local GIT repository
+Refer to section 5.2.2 "Working with new branch in local GIT repository"
+       
+5.3.3	Modifying existing code
+Once we are done with the local GIT branch, we are ready to modify:
+>	If not already, go to webMethods designer, click on Windows>Perspective>Open Perspective> 
+Others>Git
+
+>	Make Sure to clean the local repository and refresh from remote before starting any changes. In 
+this case we don't have Demo package in the local Integration Server, as we will import it from 
+repository.
+
+ 
+
+>	Right click on the Working tree > Import projects.
+
+ 
+
+>	Select the package on which we want to work, in  this case it is Demo package.
+
+ 
+
+>	Go to resource view
+
+ 
+
+>	A project will be created as part of import done in previous step.
+
+ 
+
+>	Now, right click on the project and select  " Move Project to IS Package"
+
+ 
+
+>	Now, go to service development view and check the Demo package should have loaded to work 
+and modify.
+
+ 
+
+>	Modify the service/assets and save it. Check in the GIT repository view, you will find unstaged 
+changes.
+
+ 
+
+>	Done
+       
+5.3.4	Pushing Code to GITLab
+Refer to section 5.2.4 "Pushing Code to GITLab"
+       
+5.4	Creating branch merge request
+If the development of new code or modification of existing code is completed, developers need to raise a 
+merge request of the branch created by the developer to the target branch DEV_<BusinessApplication> 
+e.g. DEV_ADSL_NONL or if the changes are tested successfully in all non-prod environments (like DEV, 
+TEST, PreProd etc), the target branch will be PRD_<BusinessApplication> e.g. PRD_ADSL_NONL 
+5.4.1	Create merge request in remote GITLab
+Once we are done with the local GIT branch, we are ready to modify:
+>	Open Git Lab URL, and go to Fruit > EAI Integration >Repository > Branches. Select the branch 
+to be merged (in this case, ADSL_NONL_Proj_SplitDomain_01). Click on merge request
+
+ 
+
+>	Change the target branch
+
+ 
+
+>	After changing the target branch, it will look like.
+
+ 
+
+>	Assign to approver/maintainer, Verify the other details like Target branch. Finally submit for 
+merge.
+
+ 
+
+>	It can be seen in the merge request.
+
+ 
+
+>	Done
+       
+5.4.2	Approving the merge request
+One a merge request is raised, the approver can see it in the list of requests and can approve:
+
+>	Login as approve/maintainer (in this case Fruit user).A notification can be seen in the to-do list.
+
+ 
+
+>	It will show the merge request to be approved.
+
+ 
+
+>	Once verified with the changes, click on the merge button.
+
+ 
+
+>	Once merged, it can be seen who merged the request.
+
+ 
+
+>	This merge will cause a commit in the target branch.
+
+ 
+
+>	Open the target branch, the message can be seen.
+
+ 
+
+>	Once commit happens in the target branch, it will trigger Jenkins job for automated deployment 
+process.
+
+>	Done
+
+6.0	WEBMETHODS UNIT TEST FRAMEWORK 
+6.1	Installations and Configurations
+Follow below steps for the installation and configuration of webMethods Unit test framework. 
+6.1.1	Installation
+>	For installation, refer to section 4.1.2 "Installation Steps"
+6.1.2	Configuration & Verification
+>	Open the Designer using administrator role.
+
+>	Verify the license key. Go to Windows > Preferences> Software AG> webMethods 
+TestSuite>License
+
+ 
+
+>	Verify WmServiceMock package is installed. If it is not installed, make sure to install it (replicate 
+install-inbound should work)
+
+ 
+
+>	Done
+
+6.2	Unit Test Case Structure
+The test cases should be organized in a well formed directory structure, also these should be kept under 
+tests directory in the GITLab repository independently from service packages. 
+6.2.1	Test case structure
+       The structure for unit test cases will be as below:
+       i.e. <PackageName>_Test e.g. Demo_Test , where Demo is the name of the service package.
+       
+        
+       
+       
+6.3	Unit Test Case Creation
+Unit test cases are created using Unit test framework. 
+6.3.1	Unit Test Case Creation using Designer 
+       Follow below steps for creating unit test cases using Designer.
+       
+>	The easiest way is to create a package using Designer in service development view,
+
+ 
+
+>	Now, copy the package folder to the Local GIT repository location
+From: ==> C:\SoftwareAG103\IntegrationServer\instances\default\packages\Demo_Test
+To:  ==> C:\GITData\eai-integration\webMethods\IS\tests\Demo_Test
+
+ 
+
+>	Go to Designer and open the java project. Select the  _Test package folder created in above 
+step.
+
+ 
+
+>	Go to libraries and click on Add Library.
+
+ 
+
+>	Select WmTestSuite libraires.
+
+ 
+
+>	Select the jars as shown in the image.
+
+ 
+
+>	It will add all required jars for unit test cases.
+
+ 
+
+>	Under the resources, create a folder structure like below.
+
+ 
+
+>	Right click on setup > New > Other. Search for 'test', you see Test suite like below:
+
+ 
+
+>	Provide relevant details and click on finish.
+
+ 
+
+>	Right click on the open space and select "Add"
+
+ 
+
+>	Provide test case name and description.
+
+ 
+
+>	Select the service for which test cases to be created.
+
+ 
+
+>	Make sure to place the input and output data files along with the given structure under data 
+directory of the test cases.
+
+ 
+
+>	Select the input and output files for the test case.
+
+ 
+
+>	Save the test case.
+
+>	Please note that, once test cases are created push them to GITLab repository the same way you 
+do for webMethods services. and push it to GITLab.
+
+>	Done
+       
+6.3.2	Mocking the Unit Test Cases 
+To mock the result of service (e.g. backend service like JDBC adapter SAP etc) where you don't 
+want the service to be executed and mock a defined output, follow below steps:
+       
+>	Right click on the mock Option under the test case as shown below.
+
+ 
+
+>	Provide the service name to be mock during execution of this test case. Also, specify the output 
+file to be mocked instead of actual execution. Please note that pub.flow:clearpipeline doesn't 
+require any output file, it will work without any output file also
+
+ 
+
+>	Save the project and execute like you do normally.
+
+>	If you don't want to execute the test cases without mocking it i.e (mocking=disabled), it can be 
+done while executing the test case.
+
+>	Done
+       
+6.3.3	Executing Unit Test Cases 
+The unit test cases can be executed from Designer while creating the test cases i.e. in a manual 
+way. The other way is an automated way of executing the test cases using ANT script build file. 
+Refer to Administrator guide for ANT script.
+Follow below steps for executing the unit test cases uing Designer:
+       
+>	Right click on the Test case to be executed > Run > Run Tests. If you are planning to executed 
+all the test cases within this suite, select Run Suite option (as shown below):
+
+ 
+
+>	After executing the test cases, the result would look like.
+
+ 
+
+>	If running with mocking enabled, make sure WmServiceMock package is installed already.
+
+>	Done
+
+7.0	REFERENCES 
+7.1	SoftwareAG References
+       
+       Below are the references to SoftwareAG guides or documents:
+>	10-3_Deployer_Users_Guide.pdf
+>	10-3_Unit_Test_Framework.pdf
+>	10-3_Integration_Server_Developers_Guide.pdf
+       
+7.2	General References
+
+       Below are the references to general documents or links:
+>	https://jenkins.io/doc/
+>	https://jenkins.io/user-handbook.pdf
+>	https://docs.gitlab.com/ee/README.html
+>	https://medium.com/@teeks99/continuous-integration-with-jenkins-and-gitlab-fa770c62e88a
+>	https://tecadmin.net/tutorial/git-tutorial/git-install-client/
+>	https://mirrors.edge.kernel.org/pub/software/scm/git/
+
+1	(c)2019 Software AG. All rights reserved.
+
+			 
+                    
+1	(c)2019 Software AG. All rights reserved.
+
+                                        		 
+
+1	(c)2019 Software AG. All rights reserved.
+
+
+

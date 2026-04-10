@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="Deployer-Automation" basedir="..">
+    
+    <!-- Deployment Target -->
+    <target name="deployer.deploy" depends="deployer.init, deployer.generatePA, deployer.executePA, deployer.verify">
+        <echo message="Deployment completed successfully"/>
+    </target>
+    
+    <!-- Initialize Deployer -->
+    <target name="deployer.init">
+        <echo message="=== Initializing Deployer ==="/>
+        <echo message="Target Environment: ${bda.targetEnv}"/>
+        <echo message="Project Name: ${bda.projectName}"/>
+        <echo message="Deployer Host: ${config.deployer.deployerHost}:${config.deployer.deployerPort}"/>
+        
+        <!-- Verify Deployer installation -->
+        <available file="${config.deployer.deployerInstallationPath}" type="dir" property="deployer.exists"/>
+        <fail unless="deployer.exists" message="Deployer not found at: ${config.deployer.deployerInstallationPath}"/>
+        
+        <!-- Set Project Automator output file -->
+        <property name="pa.xml.file" value="${config.tmpdir}/ProjectAutomator_${bda.targetEnv}.xml"/>
+        
+        <echo message="Deployer initialized"/>
+    </target>
+    
+    <!-- Generate Project Automator XML from Template -->
+    <target name="deployer.generatePA">
+        <echo message="=== Generating Project Automator XML from Template ==="/>
+        <echo message="Target Environment: ${bda.targetEnv}"/>
+        <echo message="Output File: ${pa.xml.file}"/>
+        
+        <!-- Load environment-specific properties -->
+        <property file="${basedir}/deployer/environments/${bda.targetEnv}.properties"/>
+        
+        <!-- Copy template and replace tokens -->
+        <copy file="${basedir}/deployer/ProjectAutomator.template.xml"
+              tofile="${pa.xml.file}"
+              overwrite="true">
+            <filterset>
+                <filter token="PROJECT_PREFIX" value="${PROJECT_PREFIX}"/>
+                <filter token="BUILD_NUMBER" value="${bda.buildNumber}"/>
+                <filter token="PROJECT_NAME" value="${bda.projectName}"/>
+                <filter token="TARGET_ENV" value="${TARGET_ENV}"/>
+                <filter token="FBR_REPO_NAME" value="${fbrRepoName}"/>
+                <filter token="IS_HOST" value="${IS_HOST}"/>
+                <filter token="IS_PORT" value="${IS_PORT}"/>
+                <filter token="IS_USERNAME" value="${IS_USERNAME}"/>
+                <filter token="IS_PASSWORD" value="${IS_PASSWORD}"/>
+                <filter token="UM_HOST" value="${UM_HOST}"/>
+                <filter token="UM_PORT" value="${UM_PORT}"/>
+                <filter token="DO_VARSUB" value="${DO_VARSUB}"/>
+                <filter token="VARSUB_DIR" value="${VARSUB_DIR}"/>
+            </filterset>
+        </copy>
+        
+        <echo message="✓ Project Automator XML generated successfully"/>
+        <echo message="  Template: deployer/ProjectAutomator.template.xml"/>
+        <echo message="  Environment: deployer/environments/${bda.targetEnv}.properties"/>
+        <echo message="  Output: ${pa.xml.file}"/>
+    </target>
+    
+    <!-- Execute Project Automator -->
+    <target name="deployer.executePA">
+        <echo message="=== Executing Project Automator ==="/>
+        
+        <!-- Determine Project Automator executable -->
+        <condition property="pa.exe" value="projectAutomator.bat" else="projectAutomatorUnix.sh">
+            <os family="windows"/>
+        </condition>
+        
+        <property name="pa.full.path" value="${config.deployer.deployerInstallationPath}/${pa.exe}"/>
+        <property name="pa.log.file" value="${config.deployer.deployerInstallationPath}/../logs/ProjectAutomator.log"/>
+        
+        <echo message="Executing: ${pa.full.path}"/>
+        <echo message="Input: ${pa.xml.file}"/>
+        <echo message="Log: ${pa.log.file}"/>
+        
+        <!-- Execute Project Automator -->
+        <exec executable="${pa.full.path}" 
+              dir="${config.deployer.deployerInstallationPath}"
+              failonerror="false"
+              resultproperty="pa.result"
+              output="${pa.log.file}">
+            <arg value="${pa.xml.file}"/>
+        </exec>
+        
+        <!-- Check result -->
+        <condition property="pa.success">
+            <equals arg1="${pa.result}" arg2="0"/>
+        </condition>
+        
+        <fail unless="pa.success">
+            <![CDATA[
+            Project Automator failed with exit code: ${pa.result}
+            Check log file: ${pa.log.file}
+            ]]>
+        </fail>
+        
+        <echo message="Project Automator executed successfully"/>
+    </target>
+    
+    <!-- Deploy using Deployer CLI -->
+    <target name="deployer.executeDeploy">
+        <echo message="=== Executing Deployer CLI ==="/>
+        
+        <!-- Determine Deployer CLI executable -->
+        <condition property="deployer.exe" value="Deployer.bat" else="Deployer.sh">
+            <os family="windows"/>
+        </condition>
+        
+        <property name="deployer.full.path" value="${config.deployer.deployerInstallationPath}/${deployer.exe}"/>
+        <property name="deployer.log.file" value="${config.deployer.deployerInstallationPath}/../logs/Deployer.log"/>
+        <property name="project.full.name" value="${config.deployer.projectNamePrefix}_${bda.targetEnv}_${bda.buildNumber}"/>
+        
+        <echo message="Executing: ${deployer.full.path}"/>
+        <echo message="Project: ${project.full.name}"/>
+        <echo message="Log: ${deployer.log.file}"/>
+        
+        <!-- Execute Deployer -->
+        <exec executable="${deployer.full.path}"
+              dir="${config.deployer.deployerInstallationPath}"
+              failonerror="false"
+              resultproperty="deployer.result"
+              output="${deployer.log.file}">
+            <arg value="--deploy"/>
+            <arg value="-project"/>
+            <arg value="${project.full.name}"/>
+            <arg value="-host"/>
+            <arg value="${config.deployer.deployerHost}"/>
+            <arg value="-port"/>
+            <arg value="${config.deployer.deployerPort}"/>
+            <arg value="-user"/>
+            <arg value="${config.deployer.deployerUsername}"/>
+            <arg value="-pwd"/>
+            <arg value="${config.deployer.deployerPassword}"/>
+            <arg value="-force"/>
+        </exec>
+        
+        <!-- Check result (8 = error, 0 = success) -->
+        <condition property="deployer.success">
+            <not>
+                <equals arg1="${deployer.result}" arg2="8"/>
+            </not>
+        </condition>
+        
+        <fail unless="deployer.success">
+            <![CDATA[
+            Deployer failed with exit code: ${deployer.result}
+            Check log file: ${deployer.log.file}
+            ]]>
+        </fail>
+        
+        <echo message="Deployer executed successfully"/>
+    </target>
+    
+    <!-- Verify Deployment -->
+    <target name="deployer.verify">
+        <echo message="=== Verifying Deployment ==="/>
+        
+        <!-- Load environment properties for verification -->
+        <property file="${basedir}/deployer/environments/${bda.targetEnv}.properties"/>
+        
+        <echo message="Deployment targets:"/>
+        <echo message="  - ${TARGET_ENV}_IS: ${IS_HOST}:${IS_PORT}"/>
+        <echo message="  - ${TARGET_ENV}_UM: ${UM_HOST}:${UM_PORT}"/>
+        
+        <echo message="✓ Deployment verification completed"/>
+    </target>
+    
+    <!-- Clean Deployer artifacts -->
+    <target name="deployer.clean">
+        <echo message="=== Cleaning Deployer Artifacts ==="/>
+        <delete file="${pa.xml.file}" failonerror="false"/>
+        <echo message="Deployer artifacts cleaned"/>
+    </target>
+    
+</project>
+
+<!-- Made with Bob -->

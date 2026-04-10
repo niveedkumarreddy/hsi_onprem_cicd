@@ -1,0 +1,1630 @@
+
+
+
+
+
+
+
+
+
+Integration DevOps Guidelines And User Manual
+
+
+
+
+
+
+
+
+
+
+
+Current 
+Version:
+1.1
+Updated parallel development
+
+
+
+
+
+Copyright (c) 2009 by Silksuits IT. All rights reserved. No part of this document may be presented,
+reproduced or copied in any form or by any means (graphical, electronic or mechanical including
+photocopying, recording tape or by any information storage and retrieval system) without the 
+express written permission of Silksuits Ltd. 
+
+CHANGE HISTORY 
+VERSION
+CHANGE
+AUTHOR
+DATE
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+APPROVALS 
+
+NAME
+POSITION
+SIGNATURE
+DATE
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+DISTRIBUTION
+Group or Individual NAME
+ICC Architects Team
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+	
+TABLE OF CONTENTS
+
+1	Introduction	5
+1.1	Project Background	5
+1.2	Project Objective	5
+1.3	Document Purpose	5
+1.4	References	5
+2	Project Scope	6
+2.1	Inclusions	6
+2.2	Assumptions and Dependencies	7
+2.3	Issues	8
+2.4	Risks	8
+2.5	Purpose of this document	9
+2.6	Business Context	9
+2.7	Definitions, Acronyms & Abbreviations	9
+3	environment and server	11
+3.1	Server details	11
+4	Roles and responsibilities	11
+5	CICD Delivery Process	12
+6	Toolset	15
+6.1	Software AG Product Suite (Designer, IS, Broker and UM)	15
+6.2	GITLab as Source Repository	15
+6.3	GitLab for Continuous Integration	15
+6.4	Software AG Asset Build Environment	15
+6.5	Software AG wM Deployer	16
+6.6	Software AG wMTestSuite	16
+7	CICD Flow Diagram	17
+8	Infrastructure Setup	19
+8.1	Virtual Machine Configurations	19
+8.2	Softwares to be installed in LINUX VM	19
+8.3	Software Configuration requirement per VM	19
+8.4	Infrastructure Setup Approaches	20
+9	CICD Setup	21
+9.1	Local Development Environment Setup	21
+9.2	Build Environment Setup	22
+9.3	Reference Server	24
+9.4	Version Control Setup	24
+10	Parallel Development	28
+11	GIT Installation	35
+12	GIT Check-out & Check-in	37
+12.1	Check-out changes from remote repository	37
+12.2	Check-in changes to remote repository	41
+13	Install IS, Designer and WmTestSuite	44
+14	Create & Execute Test Suite	49
+14.1	Test Suite and Test Case Naming Convention	62
+15	Jenkins Installation & Configuration	63
+16	Future roadmap	76
+17	Appendix	77
+17.1	Infrastructure Setup Approaches	77
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+1	INTRODUCTION
+1.1	Project Background
+webMethods Integration development team is undergoing a transformation phase with an aim to 
+enhance and improve the efficiency of integration development activity.
+In current development model, the development practice is carried out loosely in a sequential manner. 
+Development systems are centralised and used by all integration development users and projects.
+Development, changes and testing are not so easily done due a single environment for development. 
+Going forward, we are aiming to introduce Continuous Integration and Continuous Delivery model. In 
+this new model it will strength code integrity and quality, and most importantly improve development 
+process efficiency.
+
+1.2	Project Objective
+Silksuits is currently running on Software AG's webMethods product suite for integrating enterprise 
+applications, stores systems and B2B partners. This landscape has grown over a period of time which 
+makes it challenging to manage the delivery of webMethods integration projects. So, we are looking 
+for an effective delivery process to reduce interface on-board time and improve quality of deliverables. 
+Continuous Integration is a development practice that requires developers to integrate code into a 
+shared repository several times a day. Each check-in is then verified by an automated build and test, 
+allowing teams to detect problems early.
+Continuous Delivery is a DevOps software development practice where code changes are 
+automatically built, tested, and prepared for a release to development with greater efficiency and 
+frequency.
+
+1.3	Document Purpose
+The purpose of this document is to capture the CI-CD guidelines and user manual which details the 
+CI-CD process, tooling requirements and operational steps
+
+1.4	References
+1.4.1	Documents
+ID.
+Document
+Author
+Date
+
+
+
+
+
+
+
+
+
+1.4.2	Business SME
+Name
+Position
+Department
+Subject Matter Area / Topic
+
+
+
+
+
+
+
+
+
+1.4.3	Technical SME
+Name
+Position
+Department
+Subject Matter Area / Topic
+
+
+
+
+
+
+
+
+
+
+
+
+
+2	PROJECT SCOPE
+The scope of this project is to:
+1.	Define and document the CI-CD process
+2.	Document the toolset to be used as a part of CI-CD process
+3.	Document the steps to be followed to implement CI-CD process
+4.	Define and Document the source code structure for various integration products (like IS, BPM, 
+TN etc.) in version control system
+5.	Document how to install and configure local development environment
+6.	Document how to install and configure CI tool (Jenkins)
+7.	Document how to configure build server
+8.	Document how to configure Reference IS 
+
+2.1	Inclusions
+ID.
+Description
+1
+All necessary processes to be adopted as part of Integration DevOps model
+2
+All necessary tools to be used as part of Integration DevOps model.
+3
+Installation and configuration of tools to be used as a part of CICD process
+4
+All necessary steps to install and configure WmTestSuite
+5
+This document describes how to set up and configure GitHub, Jenkins and other operational
+procedures
+
+2.2	Assumptions and Dependencies
+ID.
+Description
+Owner(s)
+Status
+1
+We started our CICD journey with GitHub (as source 
+control) and Jenkins (as CI tool). But it has been 
+decided to use GitLab as the one stop shop for both 
+source control and CI tool.
+Andrew So
+Confirmed
+2
+JFrog Artifactory which is in the CICD road map as a 
+binary repository will not be onboard / available within 
+coming financial year (2020)
+Andrew
+Confirmed
+3
+Current document talks mainly about the CICD 
+implementation till Development environment. At the 
+same time it also provides a roadmap to be followed 
+while implementing CICD model till production (Section: 
+Future Roadmap).  
+
+
+4
+The current CICD process brings local development, 
+version control and regression unit testing till 
+Development environment. Migration from Dev to PROD 
+will follow the usual BAU process using Harvest. With 
+this hybrid model, all SDLC issues won't get addressed / 
+resolved, but it will build a base for future CICD  
+implementation
+
+
+5
+If Release Manager wants to demerge / remove any 
+changes, developer needs to do the due diligence (diff 
+between two commits) i.e. the commit which was taken 
+from master to implement the change and the commit 
+which implemented with the changes in the master 
+branch. This has to be done using Software AG 
+Designer.
+
+
+6
+Regression unit testing will done for the version which 
+was taken from master branch plus the unit test cases 
+added for the change done by the developer
+
+
+7
+For the codes which running on windows, will be tested 
+on Reference IS, hosted on Linux. Discussed  approach 
+is to identify the operating system and to identify the 
+corresponding properties files. For e.g in 
+getConfiguration service, the OS will be identified and 
+properties file will be choose based on that. i.e. 
+XXX_L.properties for linux and XXX_W.properties for 
+Windows.
+
+
+8
+In case there is an issue with CICD server and there is a 
+hot fix to release, then that can be done directly in 
+Development server and can be moved further. Once 
+the server is up and running, then the hot fix needs to be 
+merged and synced.  
+
+
+
+2.3	Issues
+ID.
+Description
+Owner(s)
+Status
+1
+Local Work Station will be connecting internet via proxy 
+server
+IT Security
+To be validated
+
+
+
+
+
+
+
+
+
+2.4	Risks
+ID.
+Description
+Owner(s)
+Status
+
+
+
+
+
+
+
+
+
+
+
+
+
+2.5	Purpose of this document
+The purpose of this document is to define the CI-CD delivery process and technical instructions to be 
+followed by integration webMethods Development team.
+
+2.6	Business Context
+Objective
+Outcome
+To have a CI-CD integration and 
+deployment approach
+?	Incremental code release to improve delivery efficiency and identify 
+issues early
+?	Maintain a code repository
+?	Optimize the process of Package Build, automated unit testing and 
+deployment to the Development environment
+?	Make test results available to relevant stakeholders
+
+2.7	Definitions, Acronyms & Abbreviations
+Term
+Definition
+ABE
+webmethods Asset Build Environment
+ACL
+Access Control List
+CICD
+Continuous Integration and Continuous Delivery
+HSLD
+High Level Solution Design
+ICC
+Integration Competency Centre
+IS
+Integration Server
+LLD
+Low Level Design
+MWS
+My webMethods Server
+RPM
+Red Hat Package Manager
+SIT
+System Integration Testing
+TN
+Trading Networks
+UAT
+User Accepted Testing
+UM
+Universal Messaging
+VCS
+Version Control Systems - This is a generic term to define used for 
+source control.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+3	ENVIRONMENT AND SERVER
+3.1	Server details
+      All CICD related components will be installed in the following temporary virtual machines:
+Host Name
+IP Address
+CPU
+Memory
+Storage
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+4	ROLES AND RESPONSIBILITIES
+    Here are the roles and responsibilities corresponding to the CICD delivery approach:
+
+Sl. No.
+Role
+Responsibility
+1
+Integration Architect
+Understands the HLSD and creates low level design 
+(LLD) document
+2
+Integration Developer
+Understands the LLD, develops and delivers the code 
+and unit test cases
+3
+QA
+Understands business functionality, creates and perform 
+end-to-end functional test cases
+
+
+
+
+
+
+
+
+
+5	CICD DELIVERY PROCESS
+    Here is the CICD delivery process:
+
+ 
+Pre DevOps activities:
+-	Solution Architect will understand the business / solution / functional requirement and will 
+create high level solution design (HLSD) document
+-	Integration Architect / Designer will understand the HLSD and create integration design 
+document which covers both Integration HLSD and LLD
+-	Integration Developer will have a detailed walkthrough with the Integration Architect / Designer 
+to understand the design
+
+
+ 
+Section A:
+1.	Integration Developer to clone the master branch and create a new develop branch for the 
+current change
+2.	Integration Developer will start development activities on develop branch at local workstation
+Section B:
+3.	Once development for that particular interface is complete, create unit test suite using 
+Software AG wMTestSuite
+Section C:
+4.	 Execute test suite
+Section D:
+5.	If test results are successful, then push the changes to version control system (VCS)
+Section E:
+6.	Schedule / Execute the Jenkins job to deploy from VCS to Reference IS:
+a.	At the build server (wM ABE), pull the source code from source repository and stores 
+in file system
+b.	Create a build using wM ABE
+c.	Deploy the build to Reference Server using wMDeployer
+d.	Execute test cases in Reference Server and validate test results
+e.	If test result is false, then go back to section A.2 and follow the same process
+Section F:
+7.	If test result is success, Integration Developer will create a pull request in VCS for merging 
+develop branch into master. Release manager will follow this up when receive this pull request
+Section G:
+8.	Release manager sees the merge request and reviews the changes along with other pull 
+request for the same repository. And based on the release priority and planning, release 
+manager will either include or exclude the particular pull request. When satisfied with all 
+conditions, the Release manager will marks the build in Binary repository for DEV deployment. 
+If a particular pull request doesn't meet the release planning criteria, then the pull request will 
+be parked for the next release cycle
+Section H:
+9.	Release Manager executes the Jenkins job to deploy from Binary repository (GitLab Binary 
+repository) (which is the output from wM ABE which is created by the developer) to 
+Development Environment.
+Section I:
+10.	Release manager will approve the pull request to merge develop branch into master
+
+Post DevOps activities:
+-	Developer team will use Harvest application to deploy the build in SIT/Test environment
+-	QA team will run test cases in SIT/Test environment
+-	In case of any bug / CR the same will move back to development or else will move to UAT 
+environment using Harvest
+-	Business test cases will be executed in UAT environment
+-	In case of any issue the same will move back to development or else will move to Production 
+environment using Harvest
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+6	TOOLSET
+Following tools will be used for Silksuits CICD implementation:
+Sl. No.
+Task
+Tool
+1
+Build
+Software AG Asset Build Environment (ABE)
+2
+Build Binary Repository
+VM File System 
+(JFrog Artifactory to be adopted in future)
+3
+Continuous Integration
+GitLab
+(Jenkins - Old design approach)
+4
+Deployment
+Software AG wMDeployer
+5
+Development
+Software AG Product Suite(Designer, 
+Integration Server, Broker and UM)
+6
+Source Control Repository
+GitLab
+(GitHub - Old design approach)
+7
+Unit Test and Regression
+Software AG WmTestSuite
+
+6.1	Software AG Product Suite (Designer, IS, Broker and UM)
+Developers need to install the following Software AG products to do the local development:
+-	Software AG Designer - This is an IDE to do local development
+-	webMethods Integration Server - This provides a locally running environment / platform for 
+developing and testing webMethods source code
+-	webMethods Broker - This provides a messaging platform
+-	Software AG Universal Messaging - This provides a messaging platform
+6.2	GITLab as Source Repository
+GitLab is used as a source repository, which stores webMethods source code as well as the history of 
+changes made to these source codes.
+6.3	GitLab for Continuous Integration
+GitLab is used as continuous integration tool which will orchestrate the process of checking out the 
+source code from source repository, create build, put the build in build binary repository, deploy in 
+reference IS and run test cases.
+6.4	Software AG Asset Build Environment
+Software AG Asset Build Environment (ABE) is used to create the build which gets deployed in 
+reference IS and Development server.
+6.5	Software AG wM Deployer
+Software AG wM Deployer is used to deploy the  build to Reference IS and Development server.
+6.6	Software AG wMTestSuite
+Software AG wM Test Suite is used to create and execute unit test cases.
+The below diagram shows how Silksuits CICD operating model is mapped to the selected toolsets:
+ 
+
+ 
+
+
+
+
+
+
+7	CICD FLOW DIAGRAM
+ 
+
+Here are the steps to be followed for CICD approach (without JFrog Artifactory):			 
+1.	Integration Developer will do development and unit testing at local workstation. Once the test 
+results are successful, then push the changes to version control system (VCS)
+2.	As soon as something new being committed to VCS, CI server will get notified using web hook
+3.	GitLab runner, which constantly polls GitLab CI server, will be notified to start the CI job
+4.	The job will pull the repository from VCS
+5.	The job will invoke WmABE to create build
+6.	WmABE will run, create build and store it in Build repository
+7.	The job will:
+a.	Invoke WmDeployer
+b.	WmDeployer will pull the build from build repository
+8.	WmDeployer will deploy to Reference IS
+9.	Once the deployment is successful in Reference IS. The job will execute all the test cases
+10.	Once the test cases are successful, the GitLab Runner will use another job for WmDeployer to 
+deploy the build in Development Server
+11.	Release manager will approve the pull request to merge develop branch into master
+
+
+
+
+ 
+Here are the steps to be followed for CICD End state:		 
+1.	Integration Developer will do development and unit testing at local workstation. Once the test 
+results are successful, then push the changes to version control system (VCS)
+2.	As soon as something new being committed to VCS, CI server will get notified using web hook
+3.	GitLab runner, which constantly polls GitLab CI server, will be notified to start the CI job
+4.	The job will pull the repository from VCS
+5.	The job will invoke WmABE to create build
+6.	WmABE will run, create build and store it in file system
+7.	The job will:
+a.	Invoke WmDeployer
+b.	WmDeployer will pull the build from build repository
+8.	WmDeployer will deploy to Reference IS
+9.	Once the deployment is successful in Reference IS. The job will execute all the test cases
+10.	After successfully running the test cases, the job will push the build to JFrog Artifactory
+11.	Another job will pull the build from JFrog Artifactory 
+12.	After pulling the build a deployer project will be created and use WmDeployer to deploy the 
+build in Development Server
+13.	Release manager will approve the pull request to merge develop branch into master
+
+
+
+8	INFRASTRUCTURE SETUP
+Here is the infrastructure requirement for Integration CICD
+8.1	Virtual Machine Configurations
+VM Type
+CPU
+Memory
+Storage
+Count
+LINUX VM
+16
+32 GB
+100 GB
+6
+
+8.2	Softwares to be installed in LINUX VM
+ 
+
+8.3	Software Configuration requirement per VM
+Configuration requirements for each installed software
+Sl. No.
+Software 
+Component
+No. of components 
+installed
+RAM / Software 
+component
+Total RAM / 
+Software 
+component
+Total 
+RAM
+1
+Build IS
+1
+4 GB
+4 GB
+
+2
+Reference IS 
+10
+2 GB
+20 GB
+
+3
+GitLab 
+Runner
+1
+2 GB
+2 GB
+
+4
+Guest OS
+1
+2 GB
+2 GB
+
+5
+Buffer
+
+4 GB
+4 GB
+
+
+
+
+
+
+32 GB
+
+8.4	Infrastructure Setup Approaches
+8.4.1	Active - Standby Approach
+In this approach there will be all total of six Linux VMs. As shown in the diagram below, from 
+installation perspective Linux VM1 and Linux VM2 are the replica of each other.  Linux VM1 will have 
+five active ISs and five passive ISs on the other hand Linux VM2 will have five passive ISs 
+(corresponding to the active ISs in Linux VM1) and five active ISs (corresponding to the passive ISs in 
+Linux VM1). In case of any outage in Linux VM1, all the passive ISs in Linux VM2 will be activated 
+manually.
+Note: For this setup, VM replication isn't required as we don't want to retain the state of the server. 
+The transactions are stateless.
+ 
+
+ 
+9	CICD SETUP
+ 
+9.1	Local Development Environment Setup
+This section describes the products that need to be installed:
+-	Software AG Product suite
+o	Software AG Designer
+o	Software AG Integration Server
+o	Broker / UM (as per the project requirement)
+o	Software AG WmTestSuite
+      Note: 
+-	Refer Software AG installation guide (not included in this document) to install components in 
+local machine
+-	Refer "Parallel Development" section to understand how parallel development is done and 
+how to merge with master branch
+-	Refer "Git Check-out & Check-in" section to check-out and check-in using Software AG 
+Designer
+-	Refer "Create & Execute Test Suite" section to create and execute test suite using Software 
+AG WmTestSuite
+
+9.2	Build Environment Setup
+This section describes the components that need to be installed and configured for the build 
+environment setup: 
+-	Software AG Integration Server
+o	Software AG WmDeployer
+o	Software AG Asset Build Environment
+-	CI server (Jenkins / GitLab)
+-	Git Client
+
+In Jenkins, each domain will perform two actions:
+1.	Action 1: This will checkout source code from develop branch, create build and deploy in 
+Reference IS. The name of the job is "developBranchToReferenceIS"
+2.	Action 2: This will get the required build from build repository (JFrog Artifactory) and  deploy in 
+Development IS. The name of the job is "buildToDevelopmentServer"
+
+    Naming conventions:
+    Job name that will be executed by Integration Developer
+    <Branch Name>To<Target Server>
+    For e.g. developBranchToReferenceIS
+    
+    Job name that will be executed by Release Manager
+    buildTo<Target Server>
+    For e.g. buildToDevelopmentServer
+
+1.	Steps performed by "developBranchToReferenceIS" Jenkins job are mentioned below.
+-	Checkout source code from Git
+stage ('Checkout SourceCode') {
+	steps {
+gitCheckout("./${IS_REPO_HOME}","${IS_BRANCH}","${GIT_CREDENTIALS_ID}", 
+"${GIT_URL}")
+	}
+}
+-	Create the Build in Build server using Software AG Asset Build Environment
+stage ('Create Build') {				
+	steps {
+		print " ----- Create Build ----- "
+createBuild("${SAG_HOME}","${ABE_HOME}","${BUILD_VERSION}","${JEN
+KINS_WS}")
+					
+		print " ----- Create Test Build ----- "
+createTestBuild("${SAG_HOME}","${ABE_HOME}", "${BUILD_VERSION}", 
+"${JENKINS_WS}")
+		}
+}
+-	Store the Build in Build Repository.
+-	Deploy the Build in the Reference IS using Software AG Deployer
+stage ('Deploy Build on Reference IS') {	
+	steps {
+		print " ----- Deploy Build ----- "
+		deployBuild("${SAG_HOME}/${DEPLOYER_HOME}",  
+"${PROJECT_NAME_IS}", "${DEP_CAN_IS}", "${DEPLOYER_HOST}", 
+"${DEPLOYER_PORT}", "${DEPLOYER_USER}", "${DEPLOYER_PWD}")
+	}
+}
+-	Run WmTestSuite in Reference IS
+stage ('Run Unit Tests in Refernce IS') {
+      steps {
+		print " ----- Run Unit Tests -----"
+		runUnitTests("${SAG_HOME}", "${ABE_HOME}", "${JENKINS_WS}", 
+"${DIRECTORY_TEST_REPORTS}")*/
+	}
+}
+
+Find below the screenshot of the Jenkins job:
+ 
+
+    2.   Steps performed by "buildToDevelopmentServer" job are mentioned below.
+-	Deploy the Build in Development Server using Software AG WmDeployer
+stage ('Deploy Build on Development Server') {				
+	steps {
+		print " ----- Deploy Build ----- "
+deployBuild("${SAG_HOME}/${DEPLOYER_HOME}", 
+"${PROJECT_NAME_IS}", "${DEP_CAN_IS}", "${DEPLOYER_HOST}", 
+"${DEPLOYER_PORT}", "${DEPLOYER_USER}", "${DEPLOYER_PWD}")
+				
+	}
+}
+
+    Find below the screen shot of the Jenkins job:
+ 
+
+Note: 
+-	Refer "Jenkins Installation & Configuration" section to install and configure Jenkins 
+-	Refer "Git Installation" section to install Git
+9.3	Reference Server
+The below product and component need to be installed  and configured for the Reference IS 
+server setup:
+-	Software AG Integration Server
+-	Software AG wmTestSuite
+
+9.4	Version Control Setup
+The table below shows the current integration domains and the respective version control 
+repositories:
+Integration Domain Name
+Sub Group Name
+GitLab Repository Name
+HR/HCM
+
+HCM_WMRepo
+Stores
+Stores Mediator
+STR_MED_WMRepo
+
+Stores ESB
+STR_ESB_WMRepo
+
+Stores TLOG L1 ESB
+STR_TLOG_L1_ESB_WMRepo
+
+Stores TLOG L2 ESB
+STR_TLOG_L2_ESB_WMRepo
+
+Stores TLOG L2 HANA
+STR_TLOG_L2_HANA_WMRepo
+
+Stores TLOG L2 XBR
+STR_TLOG_L2_XBR_WMRepo
+
+Stores TLOG L2 CLCS
+STR_TLOG_L2_CLCS_WMRepo
+
+Stores TLOG L2 NON PI
+STR_TLOG_L2_NONPI_WMRepo
+
+Stores TLOG L2 PI
+STR_TLOG_L2_PI_WMRepo
+B2B
+B2B TN
+B2B_TN_WMRepo
+
+B2B Email
+B2B_Email_WMRepo
+
+B2B Console
+B2B_Console_WMRepo
+B2C
+B2C Process execution
+B2C_PEC_WMRepo
+
+B2C Real time process
+B2C_RTC_WMRepo
+
+B2C Adapter process
+B2C_ADP_WMRepo
+PCI/GFS
+
+PCI_WMRepo
+Logistic/PVC
+LGST Windows
+LGST_WIN_WMRepo
+
+LGST Linux
+LGST_LNX_WMRepo
+PEL
+PEL ESB
+PEL_ESB_WMRepo
+CORE
+Core Linux
+CORE_LNX_WMRepo
+
+Core Windows
+CORE_WIN_WMRepo
+
+Core PLMS
+CORE_PLMS_WMRepo
+
+This is how repositories will be shown in version control system:
+
+ 
+
+ 
+
+Follow the below structure approach for all repositories.
+Path
+Description
+/BPM
+BPM Process Models
+/Broker
+Broker artefacts (like connection factory, 
+document type, topic and queue)
+/IS
+Integration Server resources
+/IS/packages
+Integration Server packages
+/IS/tests
+Integration Server unit test projects (using 
+WmTestSuite)
+/MWS
+My webMethods artefacts (ACLs, users, roles, 
+group)
+/TN
+Trading Network artefacts (partner profile, 
+document type, processing rule)
+/UM
+Universal Messaging artefacts (connection factory, 
+queue, topic)
+
+This is how it shows in version control system:
+ 
+
+Inside IS, it will have Packages and Tests
+ 
+
+10	PARALLEL DEVELOPMENT
+This section explains the advantages of parallel development and the process involved while doing 
+parallel development.
+
+Here is the current development approach where all the developers do their development in a 
+common development server.
+ 
+There are certain disadvantages when it comes to development in a common server.
+-	Common Server approach doesn't allow parallel development on the same interface
+-	Hard to coordinate between developers
+To deal with these hurdles, we came up with Local Service Development, where all developers will 
+install Software AG suite in their respective machine and will go ahead with their changes.
+ 
+Here are the advantages of local service development:
+-	Provides the developers with a local copy so that they do not impact other developers
+-	Support and leverage VCS plug-ins used directly in Eclipse to checkout and checkin source 
+code
+-	Developer does not need to be on the network for development
+-	Developers can work on multiple versions of the same assets using different VCS branches
+
+Here are few scenario of parallel development:
+Scenario 1: Two different projects having similar timelines need to change the same package. This 
+also describes the deployment process of how both the projects can start development in parallel.
+1.	The current released version of the package is the 'master' branch
+2.	For two requirements, developers need to work on  the same package
+3.	Integration Developer1 creates a branch to work on: branch1
+4.	Integration Developer1 makes changes and commits to branch1
+5.	Integration Developer2 starts a project, so creates branch2 from master
+6.	Integration Developer2 does not get Integration Developer1's changes as they are on branch1
+7.	Integration Developer2 makes his changes and commits to branch2
+
+
+ 
+
+8.	Integration Developer 1 wants to release the change.
+9.	Integration Developer 1 creates a pull request to merge branch1 into master
+10.	Release manager gets  the merge request and reviews the changes
+11.	Release manager once  satisfied with the changes, accepts the changes
+12.	Release manager merges branch1 into master (which has no additional changes)
+13.	Master branch is now the same as branch1
+
+ 
+
+
+
+14.	Integration Developer 2 on checking git commit , founds that the master branch has been 
+updated since he branched.
+15.	Integration Developer 2 compares and merges the changes from master into branch2
+16.	Integration Developer 2 fixes and tests  his merged changes and commits to branch2
+17.	Integration Developer 2 creates a merge request to merge branch2 to master
+
+ 
+
+18.	Release manager gets  the merge request and reviews the changes
+19.	Release manager once  satisfied with the changes, accepts the changes
+20.	Release manager merges branch2 into master (which has no additional changes)
+21.	master is now the same as branch2
+
+ 
+
+Scenario 2: How to do parallel development when there are three different projects on three different 
+packages within same repo
+Assumptions: 
+1.	The current released version of the package is the 'master' branch (M0)
+2.	For three requirements, developers need to work on three different packages within same 
+repository
+3.	Integration Developer1 creates a branch to work on: branch 1
+4.	Integration Developer1 makes changes and commits to branch 1
+5.	Integration Developer2 starts a project, so creates branch 2 from master
+6.	Integration Developer2 makes his changes and commits to branch 2
+7.	Integration Developer3 starts a project, so creates branch 3 from master
+8.	Integration Developer3 makes his changes and commits to branch 3
+
+ 
+
+9.	Integration Developer 3 wants to release the change
+10.	Integration Developer 3 creates a pull request to merge branch 3 into master (M1)
+11.	At this point environments look like:
+
+Dev
+SIT
+UAT
+PROD
+M1
+M1
+M1
+M0
+
+
+
+
+12.	A new change in master notifies all stakeholders
+13.	Integration Developer 1 is ready with his changes and wants to release the change
+14.	But he has realised that there is a change in master branch, so he has to merge the changes 
+and then have to push the changes to master branch
+15.	So Integration Developer 1 pulls the M1 changes from master branch, merge the code and 
+commits to branch 1
+16.	Now Integration Developer 1 wants to release the change
+17.	Integration Developer 1 creates a pull request to merge branch 1 into master (M2)
+18.	At this point environments look like:
+
+Dev
+SIT
+UAT
+PROD
+M1
+M1
+M1
+M0
+M2
+M2
+M2
+M0
+
+
+19.	Similarly Integration Developer 3 commits his changes to branch 3 and merges branch 3 to 
+master (M3)
+20.	At this point environments look like:
+
+Dev
+SIT
+UAT
+PROD
+M1
+M1
+M1
+M0
+M2
+M2
+M2
+M0
+M3
+M3
+M3
+M0
+
+21.	At this stage all projects are running parallel
+22.	In case one project gets cancelled (let's say Change 1 got cancelled)
+23.	Then the Delivery Lead will intimate Integration Developer 1, Release Manager and other 
+stake holders
+24.	Integration Developer 1 will do the due diligence and identify that change that has been put as 
+a part of M2 change.
+25.	Integration Developer 1 will pull the latest commit from master (which is M3 in this case) 
+removes the change 1, commits his changes to branch 1 and merges branch 1 to master (M4)
+26.	At this point change 1 will be rolled back from UAT and SIT environments
+27.	At this point environments look like:
+
+Dev
+SIT
+UAT
+PROD
+M1
+M1
+M1
+M0
+M3
+M3
+M3
+M0
+M4
+M4
+M4
+M0
+
+Scenario 3: How to do parallel development when there are three different changes on same 
+interface within same repository
+1.	The current released version of the package is the 'master' branch (M0)
+2.	For three requirements, developers need to work on three different changes on same interface 
+within the same repository
+3.	Integration Developer 1 creates a branch to work on: branch 1
+4.	Integration Developer 1 makes changes and commits to branch 1
+5.	Integration Developer 2 starts a project, so creates branch 2 from master
+6.	Integration Developer 2 makes his changes and commits to branch 2
+7.	Integration Developer 2 wants to release the change
+8.	Integration Developer 2 creates a pull request to merge branch 2 into master (M1)
+9.	A new change in master notifies all stakeholders
+10.	Integration Developer 1 is ready with his changes and wants to release the change
+11.	But he has realised that there is a change in master branch, so he has to merge the changes 
+and to push the changes to master branch
+12.	At this point environments look like:
+
+Dev
+SIT
+UAT
+PROD
+M1
+M1
+M1
+M0
+
+13.	At this point, Integration Developer 3 starts a project, so creates branch 3 from master (M1)
+14.	Integration Developer 3 makes his changes and commits to branch 3
+15.	Integration Developer 1 and 3 will raise pull request to merge the changes to master branch
+16.	But Release manager will put both the changes (change 1 and 3) on hold until M1 goes to 
+production or gets cancelled
+
+ 
+
+17.	Once M1 goes to production, then Release Manager will prioritise and then release one of the 
+hold changes
+18.	At this point environments look like:
+
+Dev
+SIT
+UAT
+PROD
+M2
+M2
+M2
+M1
+
+ 
+
+19.	Integration Developer 1 is ready with his changes and wants to release the change
+20.	Integration Developer 3 starts a project, so creates branch 3 from master
+21.	Integration Developer 3 makes his changes and commits to branch 3
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+11	GIT INSTALLATION
+This section describes how to install Git in Build Server
+
+-	Run the following command to search Git
+       sudo yum search git
+ 
+-	Run the following command to install Git
+    sudo yum install git
+     
+-	Verify Git, to check that Git installed correctly
+$ git
+    
+     
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+12	GIT CHECK-OUT & CHECK-IN
+This section describes how to check-out and check-in assets from git using Software AG Designer.
+12.1	Check-out changes from remote repository
+-	To import a repository from remote git repository, go to the repository
+ 
+
+-	Click on the "HCM_WMrepo" and then click on "Clone or download" tab
+ 
+
+ 
+-	Copy the URL
+-	Open Software AG Designer and go to Git perspective
+-	Click "Clone a git repository"
+ 
+-	Enter the URI, username and password
+ 
+-	Click Next and select the master branch.
+-	Enter the Directory, where the git repository will get copied
+ 
+-	Click Finish
+-	The git repository will get copied
+ 
+
+12.2	Check-in changes to remote repository
+-	After saving the changes, the file will be visible in "Unstaged Changes"
+ 
+-	Move the file from "Unstaged Changes" to "Staged Changes" by dragging the file or by 
+clicking "Add to Index"
+ 
+-	Give a proper commit Message and click "Commit" button.
+-	The change will be committed.
+-	Select the branch in which changes are  being made and click "Push Branch"
+ 
+-	Click Next
+-	Enter git repository username and password
+ 
+-	Click OK
+-	The change will be reflected in remote repository
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+13	INSTALL IS, DESIGNER AND WMTESTSUITE
+This section describes the installation steps to be followed to install Integration Server, Designer and 
+WmTestSuite
+
+-	WebMethods Devops Edition image file is located in the path below:
+S:\ICC\Software\webMethods\Image\10.3\DevOps
+-	Below are the installation steps (which are quite same as any normal webmethods 
+installation)
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+ 
+
+ 
+
+ 
+  
+
+
+
+
+
+
+14	CREATE & EXECUTE TEST SUITE
+This section describes how to use Software AG WmTestSuite to create test suite and test cases:
+-	Open Software AG Designer in "Service Development" perspective
+-	Create a package with "_TestSuite" appended to it. For e.g. if the package for which test suite 
+has to be created is HCM_TIM, the test suite package name is HCM_TIM_TestSuite
+ 
+-	Go to file system where packages are present
+ 
+-	Right click and invoke "Git Bash Here"
+-	Create a empty git file by clicking the below icon:
+ 
+ 
+-	Click Finish
+-	.git repository gets created
+ 
+-	Create a .gitignore file using below command
+touch .gitignore
+ 
+-	Update .gitignore file
+ 
+-	Execute below command to check the changed packages
+ 
+-	Go back to Software AG Designer, go to Service Development perspective. Right click the 
+test suite package and click "Create Local Service Development Project"
+ 
+
+ 
+-	Click Finish
+-	Go to Java perspective and expand the HCM_TIM_TestSuite folder
+-	Create the following folder structure under "resources"
+ 
+-	"setup" will contain test suite and "data" will contain input and expected output data
+-	In "setup" create test suite by right clicking > New > Other
+ 
+-	Type "test" and select "Test Suite"
+ 
+-	Click Next
+-	Enter suite name and click Finish
+ 
+ 
+-	Click Ok
+-	WmTestSuite layout will be visible
+ 
+-	Create a test suite by clicking Add
+ 
+
+-	Enter "Test Details"
+ 
+
+-	Click "untitled"
+-	Service Details, Inputs and Expected Output layout is visible
+ 
+
+-	In "Service" enter the service name that needs to be tested. In "Input", enter the input file. In 
+"Expected Output" enter the expected output file.
+ 
+-	Input and Expected Output files are stored in path shown below
+ 
+
+-	To run the test suite, right click and click "Run Test" or "Run Suite"
+ 
+
+-	Check the test result
+ 
+
+-	Use mock when backend service aren't available
+ 
+
+-	In detail layout, enter Mock Details and IData Details
+-	In, Mock Details, mention the service name to be mocked and in IData Details mention the 
+output value from mock service
+ 
+
+-	Rerun the test suite
+ 
+
+ 
+
+-	To run test suite / test cases without mocking Run Suite / Tests with Mocks disabled
+ 
+
+14.1	Test Suite and Test Case Naming Convention
+Naming conventions:
+1. Test Suite Package
+Create a package with "_TestSuite" appended to it. For e.g. if the package for which test suite has to 
+be created is HCM_TIM, the test suite package name is HCM_TIM_TestSuite
+ 
+<Package Name>_TestSuite
+2. Test Suite
+<Interface Name>_TestSuite.xml
+E.g. For below interface
+Interface Name
+Service List
+Staff Discount Data
+SDC.interfaces.pub:publishStaffDiscountCards
+EJA.interfaces.sdc:processStaffDiscountCard
+Payload.resources.jdbc:insertRow
+EJA.interfaces.lossPrevention:sendStaffDiscount2LP
+EJA.interfaces.sdc.helpers:checkMandatory
+EJA.interfaces.lossPrevention.helpers:convertDivisionToSalesOrg
+
+Test suite name will be "Staff Discount Data_TestSuite.xml"
+3. Test case
+<Service Name>_<Test Type>
+For e.g. publishStaffDiscountCards_positiveTestCase
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+15	JENKINS INSTALLATION & CONFIGURATION
+This section describes how to install and configure Jenkins:
+
+-	Download jenkins rpm from https://Jenkins.io
+ 
+-	Click "Download" button
+-	It will take you to the download section
+Note: Download from Long-term Support section
+-	Click the appropriate operating system and download the latest rpm
+ 
+-	Download the latest package to your local drive
+-	Login to the build server (in this case ncdl1wmisa0006) using WinScp and copy the rpm 
+package to /applic/cicd/tools directory
+-	Check whether Jenkins is already installed using the below command.
+	sudo yum list installed | less | grep jenkins
+        
+-	Go to /applic/cicd/tools directory and check the package details using following command
+ 
+-	This clearly shows that the rpm isn't installed
+-	Now, run the below command to install jenkins
+sudo yum install jenkins-2.150.2-1.1.noarch.rpm
+ 
+-	Rerun the yum list command to make sure that the jenkins package got installed
+sudo yum list installed | grep jenkins
+ 
+-	Go to /etc/sysconfig and update jenkins file
+ 
+ 
+-	Go to /applic/cicd/jenkins directory and create a new folder tmp
+	 
+-	Add jenkins to wmadm group
+	
+ 
+-	Go to /etc/rc.d/init.d directory and update jenkins file
+ 
+-	Run sudo systemctl daemon-reload
+-	Start jenkins and check the status
+ 
+	
+-	Get Admin password
+        
+-	Access Jenkins using below url
+http://ncdl1wmisa0005:8080/
+ 
+-	Configure proxy server
+	
+ 
+ 
+-	Click "Select plugins to install"
+	
+ 
+-	Close the plugins installation window and proceed
+	
+ 
+       Below are the steps to configure Jenkins
+-	Navigate to "Manage Jenkins"
+    
+     
+    
+    Navigate to mange plugins and select git
+    
+     
+    
+    
+     
+    
+-	Install the below plugins, dependent plugins will be selected automatically
+Manage Jenkins -> Manage plugins -> Available
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+-	Configure Global Tool Configuration in Jenkins
+
+ 
+
+-	Configure Jobs in Jenkins
+o	Repository URL - This is the git repository url which contains both Jenkins scripts and 
+source code
+o	Credentials - Login credentials to connect to Git repository and pull Jenkins scripts
+o	Branch Specifier - Branch that contains Jenkins file
+o	Local subdirectory for repo - Local directory where Jenkins file will get downloaded
+o	Script Path - Name of the Jenkins which contains pipeline as code 
+
+ 
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+16	FUTURE ROADMAP
+Here is the future roadmap for the CICD process:
+-	Implement Continuous Integration and Continuous Delivery to have an end to end automated 
+process
+
+ 
+
+-	In CICD process it is recommended to perform static code analysis for:
+o	Maintaining consistency
+o	Identifying issues early and
+o	Providing feedback to the developers
+ 
+
+-	Currently, the configurations are manually, which is time consuming and prone to human 
+errors. It is recommended to use configuration management tool to automate the 
+configurations across environments.
+
+17	APPENDIX
+17.1	Infrastructure Setup Approaches
+Here are the other approaches:
+
+17.1.1	Option 1: Contingency Approach
+In this approach, three Linux VMs will fulfil all requests. Along with these three there will be one more 
+Linux VM, which will act as a contingency VM. In case of any outage, requests will be fulfilled by 
+contingency VM. For e.g. Linux VM1, Linux VM 2 and Linux VM 3 are fulfilling all requests. In case, 
+there is some outage in Linux VM 2, the request will be fulfilled by "Linux VM 4" with some manual 
+intervention.
+
+ 
+
+17.1.2	Option 2: No Standby No Contingency Approach 
+In this approach all VMs run in its full capacity and in case of any outage, the issue needs to be solved 
+within the stipulated time as mentioned in SLA (which is between 8 to 24 hours).
+There will not be any standby VM which will fulfil the request during the outage.
+ 
+
+Integration DevOps Guidelines And User Manual

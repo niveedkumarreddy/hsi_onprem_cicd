@@ -1,0 +1,484 @@
+WebMethods CICD Implementation learning guide
+Revision History
+Version
+Date
+Author(s)
+1.0
+7th Dec 2020
+C
+
+Table of Contents
+Pre-requisites	2
+Exercise 1: Local service development and committing assets to Git	2
+Clone Git Repository	2
+Create new package in local IS and commit to Git	3
+Import package from Git to local IS	5
+Exercise 2: Build IS assets using ABE	6
+Important build.properties	6
+Executing build script	7
+Exercise	8
+Exercise 3: Create ProjectAutomator.xml to automate creation of Deployment project	9
+Deployment Project in wmDeployer	9
+Create Test Suite Executor from Designer	10
+About ProjectAutomator.xml	11
+Ant script to update ProjectAutomator.xml	13
+Exercise 4: Create Deployment Project using Project Automator script	14
+Project Automator script	14
+Exercise	14
+Exercise 5: Deploy IS assets using deployer script	15
+Deployer script	15
+Exercise	15
+Exercise 6: Create freestyle Jenkins job to automate CICD process	15
+Commit Test Suite Executor to Git	16
+Create Environmental variables in Jenkins	16
+Configure JGit in Jenkins	17
+Create freestyle Jenkins job	17
+Exercise 7: Create webhook in Bitbucket	21
+Exercise 8: Create pipeline style Jenkins job to automate CICD process	23
+Jenkins pipeline script	23
+Create Jenkins pipeline job	25
+
+Pre-requisites
+*	webMethods Integration server installed with Designer, Local service Development & Unit Test framework
+*	Another instance of webMethods Integration server installed with Asset Build Environment (ABE) 
+*	Jenkins installed with Git and pipeline plugins
+*	Bitbucket local server installed (or) Bitbucket cloud account (or) any Git repository
+Exercise 1: Local service development and committing assets to Git
+
+In this exercise you will learn committing(check-in) package in local IS and to Git
+Start the Designer using Run as administrator.
+If you do not have admin privilege, you need to do few more steps to commit IS package to Git 
+Clone Git Repository
+Open Git perspective in Designer
+ 
+Clone your Git repo (Bitbucket or any git repository)
+ 
+ 
+Create new package in local IS and commit to Git
+Start local IS and connect using Designer. Below highlighted icon shows you are using local service development
+ 
+If you do not have admin privilege disable below in preferences
+ 
+Create a package and right click to create local service development project
+ 
+
+Select the cloned repository in the next window
+ 
+Open java perspective and you will see the package created as a java project
+ 
+Right click the project Team > Add to Index
+ 
+
+Go to Git perspective and click Git Staging view. Provide commit message and click commit and push
+ 
+Import package from Git to local IS
+
+Go to Git perspective and select and import the project you want to work in local IS
+ 
+Go to java perspective and you will see the imported project. Right click and select Move project to IS package
+  
+Go to service development perspective to make changes to the package
+If you have admin privilege, follow below steps to commit the changes:
+Right click the package > Team > Add to Index
+Go to Git perspective > write commit message > commit and push
+If you do not have admin privilege, follow below steps to commit the changes:
+Right click the package > Team > Disconnect
+Go to Java perspective and right click project with the package name > Team > ShareProject
+Select repository
+ 
+Right click the project with the package name > Team > Add to Index
+Go to Git perspective > write commit message > commit and push
+Exercise 2: Build IS assets using ABE
+
+In this exercise you will learn how to build IS assets using ABE.
+The Asset Build Environment (ABE) supplies the scripts necessary to build assets into composites 
+that Deployer then deploys to target servers and groups.
+Important build.properties
+	
+You can locate the properties files for the Asset Build Environment in the following directory:
+SoftwareAG_directory \common\AssetBuildEnvironment\master_build
+
+*	build.properties Contains the settings that the build script uses to build the assets. You must set the 
+properties for the build before running the build script
+
+Property
+Description
+sag.install.dir
+The path to the installation directory of the Software AG products
+build.source.dir
+A list with the full paths to the source directories that contain 
+assets to build. Use a forward slash "/" as path separator. All 
+source directories in the list must contain project directories (such 
+as IS packages, CAF projects, and TN exports) as direct children. 
+Use ";" as the delimiter when listing more than one path. 
+For example:
+build.source.dir=/<root_path>/<project_name>/IS;/<root_pat
+h>/<project_name>/TN
+
+build.output.dir
+The root directory in which the build script will place the output 
+(composites and descriptors) of the build. Use a forward slash "/" 
+as path separator.
+For example:
+build.output.dir =<root_path>/build/
+
+build.source.project.dir
+A list of paths to the project directories that contain the assets to 
+build. Use a forward slash "/" as path separator. This property is 
+different from build.source.dir, because you use it to define 
+individual project directories. Use ";" as the delimiter when listing 
+more than one path
+enable.build.ProductID
+With this property, you can enable or disable building the 
+composites for specific runtimes included in the build. Valid values 
+are true (build composites for the specified runtime) 
+and false (exclude the specified runtime from the build). Each 
+runtime has a separate property that you must specify on a 
+separate line
+For example:
+enable.build.UniversalMessaging=true
+enable.build.IS=true
+Executing build script
+
+The build script can be located in below directory:
+SoftwareAG_directory \common\AssetBuildEnvironment\bin
+*	build.bat or build.sh The build script files for Windows and Unix systems.
+Just executing the script build.bat will take the properties from 
+SoftwareAG_directory\common\AssetBuildEnvironment\master_build\build.properties
+You can also execute the script by passing the properties as arguments as shown below
+build.bat -D<propertyKey>=<propertyValue>
+Command syntax:
+<SAG_Install_Directory>/common/AssetBuildEnvironment/bin/build.bat
+-Dbuild.output.dir=<Build_Output_Directory>
+-Dbuild.source.project.dir=<Build_Source_Packages_Semicolon_Separated> (or)
+-Dbuild.source.dir=<Build_Source_Directory> 
+-Denable.build.IS=true
+Example command:
+C:/Programs/SoftwareAG/common/AssetBuildEnvironment/bin/build.bat -
+Dbuild.output.dir=C:\Users\WDAGUtilityAccount\workspaces\cicd-workspace\builds -
+Dbuild.source.project.dir=C:\Users\WDAGUtilityAccount\workspaces\cicd-
+workspace\deployerSource\SOALearnings -Denable.build.IS=true
+Exercise
+
+Step 1: Create a Source Directory with IS Package
+ 
+Step 2: Execute build command from cmd prompt
+Example command:
+C:/Programs/SoftwareAG/common/AssetBuildEnvironment/bin/build.bat -
+Dbuild.output.dir=C:\Users\WDAGUtilityAccount\workspaces\cicd-workspace\builds -
+Dbuild.source.project.dir=C:\Users\WDAGUtilityAccount\workspaces\cicd-
+workspace\deployerSource\SOALearnings -Denable.build.IS=true
+Below screenshot show the output after executing above command for reference
+ 
+Step 3: Output directory created with folder IS inside
+ 
+Exercise 3: Create ProjectAutomator.xml to automate creation of Deployment project
+Deployment Project in wmDeployer
+
+WmDeployer UI screen can be assessed from browser using http://<host>:<port>/WmDeployer
+Deployment project creation flow:
+Create a project -> Define the project with source repository which contains the assets to deploy -> Map the target 
+servers to deploy -> Create Deployment Candidate to deploy assets to target server
+Below screenshots shows a Deployment project created manually from WmDeployer screen
+STEP 1: Create a project
+ 
+ 
+STEP 2: Define the project with source repository which contains the assets to deploy
+ 
+
+STEP 3: Map the target servers to deploy
+ 
+STEP 4: Create Deployment Candidate to deploy assets to target server
+ 
+Above steps to create Deployment project can be automated using projectautomator script and 
+PojectAutomator.xml
+Below exercise will explain the process to automate.
+Create Test Suite Executor from Designer
+
+In Designer open Unit Test Framework perspective and create a Test Suite Executor project
+ 
+ 
+ 
+About ProjectAutomator.xml
+
+Test Suite Executor created will have Deployment_ProjectAutomator.xml in below location
+/CICDDemo/deployer/Deployment_ProjectAutomator.xml
+Attached below the sample Deployment_ProjectAutomator.xml
+ 
+
+
+
+
+Project Automator XML structure:
+DeployerServer:
+ 
+Environment:
+*	Repository
+ 
+*	IS
+ 
+Projects:
+*	Project:
+ 
+Ant script to update ProjectAutomator.xml
+
+The ProjectAutomator.xml created will be used for deployment of different assets to different target servers.
+The content will be dynamically updated using ant script.
+The ant script is located in below directory:
+<SAG_Install_Directory>/common/lib/ant/bin
+
+*	ant.bat or ant.sh The ant script files for Windows and Unix systems.
+The xml config to be passed to the ant script is already created inside the Test Suite Executor project
+/CICDDemo/deployer/updateAutomator.xml
+Below screenshot shows the sample updateAutomator.xml with comments describing the significance of the 
+fields.
+ 
+Ant script uses the above xml to identify the fields which must be replaced in Deployment_ProjectAutmator.xml 
+For Example: 
+<replace file="Deployment_ProjectAutomator.xml" token="%%OUTPUT%%" 
+value="${build.output.dir}"/>
+Above line signifies %%OUTPUT%% in the Deployment_ProjectAutomator.xml to be replaced with build output 
+directory
+${build.output.dir} -> will be passed as argument while executing ant script
+${host} -> will be taken from /CICDDemo/deployer/config.cnf
+${port} -> will be taken from /CICDDemo/deployer/config.cnf
+${pwd} -> will be taken from /CICDDemo/deployer/config.cnf
+${user} -> will be taken from /CICDDemo/deployer/config.cnf
+${useSSL} -> will be taken from /CICDDemo/deployer/config.cnf
+Command Syntax:
+<SAG_Install_Directory>/common/lib/ant/bin/ant.bat -f  <updateAutomator.xml_File_location> -
+Dbuild.output.dir=<Build_Output_Directory>
+
+
+Example Command:
+C:/Programs/SoftwareAG/common/lib/ant/bin/ant.bat -f C:\Users\WDAGUtilityAccount\workspaces\wm-
+workspace\CICDDemo\deployer\updateAutomator.xml -
+Dbuild.output.dir=C:\Users\WDAGUtilityAccount\workspaces\cicd-workspace\builds
+Execute above from command prompt to replace the dynamic variables in Deployment_ProjectAutomator.xml
+ 
+Attached below the sample ProjectAutomator.xml after replacement for reference
+ 
+Exercise 4: Create Deployment Project using Project Automator script
+Project Automator script
+
+The project automator script will be located in below directory:
+SAG_Install_Directory\IntegrationServer\instances\default\packages\WmDeployer\bin
+*	projectautomator.bat or projectautomator.sh the project automator script files for Windows and Unix 
+systems.
+This script will create a deployment project in WmDeployer using the ProjectAutomator.xml file we created in 
+previous exercise
+
+Command Syntax:
+<SAG_Install_Directory>/bin/projectautomator.bat <ProjectAutomator.xml_File_location>
+Example Command:
+C:\Programs\SoftwareAG\IntegrationServer\instances\default\packages\WmDeployer\bin\projectautomator.bat 
+C:\Users\WDAGUtilityAccount\workspaces\wm-
+workspace\CICDDemo\deployer\Deployment_ProjectAutomator.xml
+Exercise
+
+Execute projectautomator script by passing the ProjectAutomator.xml file created in previous exercise as argument
+Example Command:
+C:\Programs\SoftwareAG\IntegrationServer\instances\default\packages\WmDeployer\bin\projectautomator.bat 
+C:\Users\WDAGUtilityAccount\workspaces\wm-
+workspace\CICDDemo\deployer\Deployment_ProjectAutomator.xml
+Attached below the output of above command for reference
+ 
+Exercise 5: Deploy IS assets using deployer script
+Deployer script
+
+The deployer script will be located in below directory:
+SAG_Install_Directory\IntegrationServer\instances\default\packages\WmDeployer\bin
+
+*	Deployer.bat or Deployer.sh The deployer script files for Windows and Unix systems.
+
+Deployer.{sh|bat} --deploy -dc deployment_candidate -project project  -host host -port port -user user_name -pwd 
+password -force  -reportFilePath report_path
+
+This script will deploy the assets build using ABE in Exercise 2 to the target server.
+We should pass the deployment candidate name, deployment project name as provided in ProjectAutomator.xml 
+created in exercise 3.
+Along with host, port, username and password to connect to IS which has ABE and WmDeployer installed
+
+Command Syntax:
+<SAG_Install_Directory>/bin/Deployer.bat --deploy -dc Deployment_Candidate -project Deployment_Project -host 
+<IS_HOST> -port <IS_PORT> -user <IS_USER_NAME> -pwd <IS_USER_PWD>
+
+Example Command:
+C:\Programs\SoftwareAG\IntegrationServer\instances\default\packages\WmDeployer\bin\Deployer.bat --deploy -
+dc Deployment_Candidate -project Deployment_Project -host localhost -port 5401 -user Administrator -pwd manage
+Exercise
+
+Execute deployer script by passing arguments -deploy, deployment candidate name, deployment project name as 
+provided in ProjectAutomator.xml along with host, port, username and password to connect to IS which has 
+WmDeployer installed
+
+Example Command:
+
+C:\Programs\SoftwareAG\IntegrationServer\instances\default\packages\WmDeployer\bin\Deployer.bat --deploy -
+dc Deployment_Candidate -project Deployment_Project -host localhost -port 5401 -user Administrator -pwd manage
+
+Attached below the output of the above command for reference
+ 
+Exercise 6: Create freestyle Jenkins job to automate CICD process
+
+In this exercise we will create a Jenkins job to automate all the steps from exercise 2-5
+Commit Test Suite Executor to Git
+
+Commit the Test Suite Executor project created in exercise 3 to Git repo along with the packages to deploy
+
+Create Environmental variables in Jenkins
+To create environmental variables: Click 'Manage Jenkins' > 'Configure System'
+ 
+Under Global properties, enable Environment variables and add below variables
+IS_HOST = Hostname of the IS with ABE installed
+IS_PORT = Port of the IS with ABE installed
+IS_USER_NAME = User to connect IS with ABE installed
+IS_USER_PWD = Password to connect IS with ABE installed
+SAG_INSTALL_DIR = Directory in with IS with ABE installed
+WM_DEPLOYER_DIR = WmDeployer package directory
+  
+ 
+Configure JGit in Jenkins
+
+Click 'Manage Jenkins' > 'Global Tool Configuration'
+ 
+Under Git add JGit
+ 
+
+Create freestyle Jenkins job
+
+To create freestyle Jenkins job: New Item > Provide Job name (without space) > Freestyle project
+ 
+Under General tab, you can use parameterized project to deploy only selected package
+ 
+Connect to your Git repository under Source Code Management tab
+ 
+Under Build tab, add a Execute windows batch command step and put the ABE build command from exercise 2
+If you have the job parameterized to deploy only specific package, then use below
+%SAG_INSTALL_DIR%/common/AssetBuildEnvironment/bin/build.bat -Dbuild.output.dir=%WORKSPACE%/builds -
+Dbuild.source.project.dir=%WORKSPACE%/%PackageName% -Denable.build.IS=true
+If you have the job non parameterized to deploy all packages in repo, then use below
+%SAG_INSTALL_DIR%/common/AssetBuildEnvironment/bin/build.bat -Dbuild.output.dir=%WORKSPACE%/builds -
+Dbuild.source.dir=%WORKSPACE% -Denable.build.IS=true
+ 
+Under Build tab, add another Execute windows batch command step and put the command to update the 
+ProjectAutomator.xml using ant script from exercise 3
+%SAG_INSTALL_DIR%/common/lib/ant/bin/ant.bat -f %WORKSPACE%/CICDDemo/deployer/updateAutomator.xml -
+Dbuild.output.dir=%WORKSPACE%/builds
+ 
+Under Build tab, add another Execute windows batch command step and put the command to create Deployment 
+project using projectautomator script from exercise 4
+%WM_DEPLOYER_DIR%/bin/projectautomator.bat %WORKSPACE%/CICDDemo/deployer/Deployment_ProjectAuto
+mator.xml
+ 
+Under Build tab, add another Execute windows batch command step and put the command to deploy assets to 
+target server using deployer script from exercise 5
+%WM_DEPLOYER_DIR%/bin/Deployer.bat --deploy -dc Deployment_Candidate -project Deployment_Project -
+host %IS_HOST% -port %IS_PORT% -user %IS_USER_NAME% -pwd %IS_USER_PWD%
+ 
+
+Save the job and trigger the job by clicking 'Build now' (if not parameterized) or 'Build with Parameters' (if 
+parameterized)
+ 
+Monitor the job by clicking on the build number and then Console Output
+ 
+After the job executed successfully, verify the package deployed in the IS with ABE installed (since the deployer 
+server and the target server in the ProjectAutomator.xml is same).
+Exercise 7: Create webhook in Bitbucket
+
+In this exercise, we will learn to create a webhook in local Bitbucket server.
+If you want to try this in BitBucket cloud make sure your Jenkins server can be accessed by BitBucket cloud.
+Login to your BitBucket server > navigate to your repository and then select 'Repository settings'
+ 
+In Repository settings, select Wehooks > Create webhook
+Name : <Any_Name>
+URL : <Jenkins_URL>/bitbucket-hook
+Under Events, select Push
+Then click Test Connenction
+You should get 200 status code
+ 
+Click Create, you will see webhook created
+ 
+To check whether you webhook is working, push any change to your repository and then go to webhook settings and 
+click on view details
+ 
+You will see a webhook triggered
+ 
+
+Exercise 8: Create pipeline style Jenkins job to automate CICD process
+
+In this exercise we will automate the build and deploy as soon as changes are pushed to repository using Jenkins job 
+in pipeline style. Below flow diagram illustrates this exercise.
+ 
+Jenkins pipeline script
+
+A Jenkinsfile is a text file that stores the entire workflow as code and it can be checked into a SCM.
+The Jenkinsfile is written using the Groovy DSL.
+The Jenkins pipeline is written based on two syntaxes, namely:
+1.	Declarative pipeline syntax
+The declarative pipeline is defined within a block labelled 'pipeline' 
+2.	Scripted pipeline syntax
+The scripted pipeline is defined within a 'node'
+Pipeline concepts
+Pipeline
+This is a user defined block which contains all the processes such as build, test, deploy, etc. It is a 
+collection of all the stages in a Jenkinsfile. All the stages and steps are defined within this block. It 
+is the key block for a declarative pipeline syntax.
+ 
+Agent
+An agent is a directive that can run multiple builds with only one instance of Jenkins. This feature 
+helps to distribute the workload to different agents and execute several projects within a single 
+Jenkins instance. It instructs Jenkins to allocate an executor for the builds.
+A single agent can be specified for an entire pipeline or specific agents can be allotted to execute 
+each stage within a pipeline. Few of the parameters used with agents are:
+Any
+Runs the pipeline/ stage on any available agent.
+None
+This parameter is applied at the root of the pipeline and it indicates that there is no global 
+agent for the entire pipeline and each stage must specify its own agent.
+Stages
+This block contains all the work that needs to be carried out. There can be more than one stage 
+within this directive. Each stage performs a specific task.
+ 
+ Steps 
+A series of steps can be defined within a stage block. These steps are carried out in sequence to 
+execute a stage. There must be at least one step within a steps directive. In the following example 
+I've implemented an echo command within the build stage. This command is executed as a part of 
+the 'Build' stage.
+ 
+
+Create Jenkins pipeline job
+
+Create a Jenkins file like below attachment
+ 
+Place the Jenkins file inside Test Suite Executor project created in exercise 3, like below
+ 
+Commit the Test Suite Executor Project to Git along with the packages
+Ensure below steps from exercise 6 is done already
+*	Create Environmental variables in Jenkins
+*	Configure JGit in Jenkins
+Make sure exercise 7 is done to create webhook to trigger this Jenkins job automatically.
+Install BitBucket plugin using Manage Jenkins > Manage Plugins > Search 'BitBucket Plugin' > Install plugin
+ 
+ 
+
+Create a new Jenkins job using pipeline
+Jenkins > New Item > Provide Job name (without space) > Pipeline
+ 
+Under Build Trigger tab, enable 'Build when a change is pushed to BitBucket' like below
+ 
+Under Pipeline tab,
+Select Pipeline script from SCM in Definition
+Select Git in SCM
+Provide Git url in Repository
+In Script path, provide the Jenkinsfile location in Git
+ 
+Save the job.
+To trigger the job, push any change to your repository, the webhook should trigger the job and deploy the packages 
+automatically to target server.
+Note: If the job is not triggered after Git push, trigger the job manually for the first time and thereafter the job 
+should get triggered automatically on every Git push.
+You will see a screen like below after job completed successfully
+ 
+
+

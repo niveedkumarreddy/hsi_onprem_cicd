@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+
+<!-- 
+This build file is a template Ant task that checks out sources from a version control system (VCS). 
+This template is specific to an SVN VCS, but you can modify it to work with your VCS. 
+
+NOTE: Do not change the name of this file.
+
+This Ant task relies on the third party open source library SvnAnt (http://subclipse.tigris.org/svnant.html). Set the location of the jar file libraries in the svn.jars.dir property.
+-->
+<project default="CheckOut" basedir=".">	
+
+	<property file="build.properties" />
+
+	<property name="svn.jars.dir" value="" />
+	<property name="svn.user" value="" />
+	<property name="svn.password" value="" />
+	<property name="svn.url" value="" />
+	<property name="build.checkout.dir" value="" />
+	<if>
+		<equals arg1="${build.checkout.dir}" arg2="" />
+		<then>
+			<fail>Please set "build.checkout.dir" property. </fail>			
+		</then>
+	</if>
+	
+	<path id="svnant.class.path">
+		<fileset dir="${svn.jars.dir}">
+			<include name="**/*.jar"/>
+		</fileset>
+	</path>
+
+	<taskdef resource="org/tigris/subversion/svnant/svnantlib.xml" classpathref="svnant.class.path" />
+
+	<target name="CheckOut" depends="clean" description="check out all the sources from version control">
+		<svn username="${svn.user}" password="${svn.password}" javahl="true">
+			<checkout url="${svn.url}" revision="HEAD" destPath="${build.checkout.dir}" />
+		</svn>	
+	</target>
+
+	<target name="clean" description="Clean up the checkout directory" >
+		<delete dir="${build.checkout.dir}"/>
+	</target>
+	
+</project>

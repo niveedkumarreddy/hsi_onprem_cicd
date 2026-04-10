@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="webMethods-CICD" default="buildDeployTest" basedir="..">
+    
+    <!-- Load properties -->
+    <property file="${basedir}/build.properties"/>
+    <property name="cicd.home" value="${basedir}/cicd"/>
+    
+    <!-- Import sub-build files -->
+    <import file="${cicd.home}/build-abe.xml"/>
+    <import file="${cicd.home}/build-deployer.xml"/>
+    <import file="${cicd.home}/build-test.xml"/>
+    
+    <!-- Main targets -->
+    <target name="build" depends="abe.build" description="Build webMethods packages using ABE">
+        <echo message="=== Build Complete ==="/>
+    </target>
+    
+    <target name="deploy" depends="deployer.deploy" description="Deploy packages to target environment">
+        <echo message="=== Deployment Complete ==="/>
+    </target>
+    
+    <target name="test" depends="test.execute" description="Run WmTestSuite tests">
+        <echo message="=== Tests Complete ==="/>
+    </target>
+    
+    <target name="buildDeployTest" depends="build, deploy, test" description="Complete CI/CD pipeline">
+        <echo message="=== CI/CD Pipeline Complete ==="/>
+    </target>
+    
+    <!-- Utility targets -->
+    <target name="clean" description="Clean build artifacts">
+        <delete dir="${basedir}/tmp" failonerror="false"/>
+        <delete dir="${basedir}/build" failonerror="false"/>
+        <delete dir="${basedir}/report" failonerror="false"/>
+        <echo message="Cleaned build artifacts"/>
+    </target>
+    
+    <target name="init" description="Initialize build environment">
+        <mkdir dir="${basedir}/tmp"/>
+        <mkdir dir="${basedir}/tmp/fbr"/>
+        <mkdir dir="${basedir}/build"/>
+        <mkdir dir="${basedir}/report"/>
+        <echo message="Initialized build directories"/>
+    </target>
+    
+</project>
+
+<!-- Made with Bob -->

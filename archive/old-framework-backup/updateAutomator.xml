@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="update" default="update-file" basedir=".">
+    
+    <!-- Load configuration properties from config.cnf -->
+    <property file="${basedir}/config.cnf"/>
+    
+    <!-- Property for build output directory (can be overridden via command line) -->
+    <property name="build.output.dir" value=""/>
+    
+    <!-- Target to update Deployment_ProjectAutomator.xml -->
+    <target name="update-file">
+        
+        <!-- Replace %%OUTPUT%% token with build.output.dir -->
+        <!-- ABE build output directory. This will be used as the base repository by wmDeployer -->
+        <replace file="Deployment_ProjectAutomator.xml" token="%%OUTPUT%%" value="${build.output.dir}"/>
+        
+        <!-- Replace %%HOST%% token with host from config.cnf -->
+        <!-- Hostname/IP address of server with ABE & wmDeployer installed -->
+        <replace file="Deployment_ProjectAutomator.xml" token="%%HOST%%" value="${host}"/>
+        
+        <!-- Replace %%PORT%% token with port from config.cnf -->
+        <!-- Port number of the server with ABE & wmDeployer installed -->
+        <replace file="Deployment_ProjectAutomator.xml" token="%%PORT%%" value="${port}"/>
+        
+        <!-- Replace %%PWD%% token with pwd from config.cnf -->
+        <!-- Password to connect to server with ABE & wmDeployer installed -->
+        <replace file="Deployment_ProjectAutomator.xml" token="%%PWD%%" value="${pwd}"/>
+        
+        <!-- Replace %%USERID%% token with user from config.cnf -->
+        <!-- Username to connect to server with ABE & wmDeployer installed -->
+        <replace file="Deployment_ProjectAutomator.xml" token="%%USERID%%" value="${user}"/>
+        
+        <!-- Replace %%USESSL%% token with useSSL from config.cnf -->
+        <!-- If server which has the ABE & wmDeployer installed should be connected using the secure connection -->
+        <replace file="Deployment_ProjectAutomator.xml" token="%%USESSL%%" value="${useSSL}"/>
+        
+    </target>
+    
+</project>
+
+<!-- Made with Bob -->

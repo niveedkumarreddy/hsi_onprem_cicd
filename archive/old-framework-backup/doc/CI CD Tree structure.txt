@@ -1,0 +1,54 @@
+1.1.1.1	Typical reference tree structure
+To ensure consistent builds and no configuration mis-matches and inconsistencies during the code 
+promotion process, all assets must be part of VCS such as
+*	Source code (IS package, TN assets etc.)
+*	Supporting source assets and configurations (e.g. database scripts, JMS configurations)
+*	Test artefacts
+*	Deployment source code and scripts
+*	Local development setup scripts
+*	Command Central provisioning templates (if any)
+*	A standard version control tree can look like the following tree structure
+
+Path
+Description
+/Broker
+Messaging artifacts
+/Data
+Data for initial load / e.g. for Tests
+/Documentation
+Basic project information, readme, etc
+/IS
+Integration Server resources (if any)
+/IS/bin
+IS scripts (if any)
+/IS/config	
+IS configurations (if any)
+/IS/packages
+Integration Server packages
+/IS/tests
+Integration Server Unit Test projects
+/Java
+Java Source Projects
+/TN
+TN artifacts
+/TN/Profiles
+Partner profiles
+/TN/DocTypes
+TN Doctypes
+/TN/TPA
+Trading partner agreements
+
+It is also important to distinguish between different major and minor versions to keep track of the assets 
+correctly. One option is to follow the below,
+
+*	Recommended version numbering: <major.minor.patch.build>
+*	Major: contains base changes and may not be backward compatible for interfacing systems
+*	Minor: used to indicate functional extensions
+*	Patch: may contain only patches / bug fixes
+*	Build: is the continuous build number to indicate a unique build artefact
+*	Example: 1.5.3.100
+
+INSERT DOCUMENT NAME
+DAY, MONTH, YEAR
+
+ 

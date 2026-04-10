@@ -1,0 +1,519 @@
+<?xml version="1.0"?>
+
+<project default="build" basedir=".">	
+	<property environment="env"/>
+	<property file="build.number" />
+	<property name="antlogger.echo" value="false"/>
+	
+	<target name="check-build.prop-loc">
+
+	<if>
+		<available file="${env.BUILD_PROPS_LOCATION}/build.properties"/>
+        <then>
+			<property name="custom.props.dir" value="${env.BUILD_PROPS_LOCATION}" />
+			<native2ascii encoding="UTF-8" src="${custom.props.dir}" dest="${custom.props.dir}" includes="**/*.properties" ext=".properties.ascii"/>
+			<loadproperties srcFile="${custom.props.dir}/build.properties.ascii" />
+		</then>
+	</if>
+	<if>
+		<available file="${pathCWD}/build.properties"/>
+	<then>
+		<property name="props.dir" value="${pathCWD}" />
+	</then>
+	<else>
+		<property name="props.dir" value="${basedir}" />
+	</else>
+	</if>
+
+ 
+	<native2ascii encoding="UTF-8" src="${props.dir}" dest="${props.dir}" includes="**/*.properties" ext=".properties.ascii"/>
+	<loadproperties srcFile="${props.dir}/build.properties.ascii">
+	<filterchain>
+	<tokenfilter>
+	<trim/>
+	</tokenfilter>
+	</filterchain>
+	</loadproperties>
+
+    </target>
+	
+	<target name="initLog" depends="check-build.prop-loc">
+		<if>
+			<equals arg1="${build.log.enable}" arg2="true"/>
+			<then>
+				<if>
+					<equals arg1="${build.log.fileName}" arg2=""/>
+					<then>
+						<property name="build.log.fileName.new" value="build.log"/>
+					</then>
+					<else>
+						<property name="build.log.fileName.new" value="${build.log.fileName}"/>
+					</else>
+				</if>
+				<if>
+					<equals arg1="${build.logLevel}" arg2=""/>
+					<then>
+						<property name="build.logLevel.new" value="info"/>
+					</then>
+					<else>
+						<property name="build.logLevel.new" value="${build.logLevel}"/>
+					</else>
+				</if>
+				<record name="${build.log.fileName.new}" loglevel="${build.logLevel.new}" append="false"/>
+			</then>
+		</if>
+	</target>
+	
+	<target name = "createNewBuildNumber" description = "update build number so that all the indicidual file can use it">
+		<!--<propertyfile file="build.number">
+			<entry key="build_number" type="int" operation="+" value="1"/>
+		</propertyfile>-->
+		<antfetch antfile="build-number.xml" return="build.number"/>
+	</target>
+	
+	<target name = "cleanSourceDir">	
+		<delete dir="${build.source.dir}" />
+	</target>
+	
+	<target name = "createSourceDir">
+		<mkdir dir="${build.source.dir}" />
+	</target>
+	
+  <target name = "createOutputDir">
+    <if>
+      <available file="${build.output.dir}" type="dir" />
+      <then>
+        <echo message="The directory ${build.output.dir} already exists." />
+      </then>
+      <else>
+        <echo message="Creating directory ${build.output.dir}" />
+        <mkdir dir="${build.output.dir}" />
+      </else>
+    </if>
+	</target>
+	
+	<target name = "CheckOut" description = "check out all the sources from version control by calling the defualt target for build-source-checkout.xml file">
+		<ant antfile="build-source-checkout.xml"/>
+	</target>
+	
+	<!--  Targets for calling the default target of the build file (build.xml) of each product -->
+	<target name="buildTN" depends="">
+		<ant dir="../TN"></ant>
+	</target>
+	
+	<target name="buildIS" depends="">
+		<ant dir="../IS"></ant>
+	</target>
+
+	<target name="buildMWS" depends="">
+		<ant dir="../MWS"></ant>
+	</target>
+
+	<target name="buildBroker" depends="">
+		<ant dir="../Broker"></ant>
+	</target>
+
+	<target name="buildEDA" depends="">
+		<ant dir="../EDA"></ant>
+	</target>
+
+	<target name="buildOptimize" depends="">
+		<ant dir="../Optimize"></ant>
+	</target>
+
+	<target name="buildBPM" depends="">
+		<ant dir="../BPM"></ant>
+	</target>
+	
+	<target name="buildRULES" depends="">
+			<ant dir="../RULES"></ant>
+	</target>
+	
+	<target name="buildUniversalMessaging" depends="">
+		<ant dir="../UniversalMessaging"></ant>
+	</target>
+	
+	<target name="buildApplicationPlatform" depends="">
+		<ant dir="../ApplicationPlatform"></ant>
+	</target>
+
+	<target name="buildAgileApps" depends="">
+		<ant dir="../AgileApps"></ant>
+	</target>
+  
+  <target name="buildMFT" depends="">
+		<ant dir="../MFT"></ant>
+	</target>
+  
+  <target name="buildAPIGateway" depends="">
+		<ant dir="../APIGateway"></ant>
+	</target>
+  
+  <target name="buildDES" depends="">
+		<ant dir="../DES"></ant>
+	</target>
+  
+  <target name="buildCC" depends="">
+		<ant dir="../CC"></ant>
+	</target>
+	
+	<!--  End Targets for calling the default target of the build file (build.xml) of each product -->
+
+
+	<!-- Target for calling the Deployer Indexer to create _index and _obj files-->
+	
+	
+	
+	<path id="createIndex.classpath">
+	  <pathelement path="${sag.install.dir}/common/lib/ant/lib/ant.jar"  />      <!-- for jars in common-->
+	  <pathelement path="${sag.install.dir}/common/lib/wm-g11nutils.jar"  />
+	  <pathelement path="lib/repoindexer.jar" />
+ 	</path>
+  
+    
+  
+    <!-- CLONE TASK /-->
+  <target name="gitClone" depends="gitClasspathPrepare" description="Used for cloning a remote repository">
+ 
+    <taskdef name="gitClone" classpathref="git.classpath" classname="com.softwareag.jgit.ant.tasks.api.JGitCloneAntTask"/>
+ 
+    <gitClone
+         localStore="${localStore}"
+         remoteStore="${remoteStore}"
+         username="${username}"
+         password="${password}" 
+         branch="${branch}"
+         pathToPrivateKey="${pathToPrivateKey}"
+         pathToPublicKey="${pathToPublicKey}"
+         privateKeyPassword="${privateKeyPassword}"
+         pathToKnownHosts="${pathToKnownHosts}"/>
+  </target>
+  
+  <target name="gitClasspathPrepare" depends="check-build.prop-loc" description="Prepare GIT">
+    <path id="git.classpath">
+		<fileset dir="${sag.install.dir}/common/lib">
+			<include name="wm-acdl-common.jar" />
+		</fileset>
+		<fileset dir="${sag.install.dir}/common/lib/ext">			
+			<include name="slf4j-api.jar" />
+			<include name="slf4j-log4j.jar" />
+			<include name="log4j/**" />
+			<include name="commons-io.jar" />			
+			<include name="commons-codec.jar" />			
+			<include name="jsch.jar" />				
+		</fileset>
+		<fileset dir="lib/">
+			<include name="jgit.ant.tasks.jar" />
+			<include name="jgit.tasks.impl.jar" />
+			<include name="jgit.jar" />
+			<include name="jgit-lfs.jar" />
+			<include name="org-eclipse-jgit-ssh-jsch.jar" />
+		</fileset>   
+ 	</path>
+  
+</target>
+  
+  <!-- AddCommiPush TASK /-->
+  <target name="gitAddCommitPush" depends="gitClasspathPrepare" description="Used for uploading the the assets to the remote repo">
+ 
+    <taskdef name="gitAddCommitPush" classpathref="git.classpath" classname="com.softwareag.jgit.ant.tasks.api.JGitAddCommitPushTask"/>
+
+            <gitAddCommitPush
+            localStore="${localStore}"
+            remoteStore="${remoteStore}"
+            username="${username}"
+            password="${password}"
+            message="${message}"
+            pathToPrivateKey="${pathToPrivateKey}"
+            pathToPublicKey="${pathToPublicKey}"
+            privateKeyPassword="${privateKeyPassword}"
+            pathToKnownHosts="${pathToKnownHosts}"
+			tag="${tag}"
+			fileCommand="${fileCommand}"
+			registryRoot="${registryRoot}"/>
+  </target>
+  
+  <!-- Build Upload TASK /-->
+  <target name="buildUploadAssets" description="Use this task to build the composites and upload to a remote repository.">
+    <property file="build.properties" />
+    <if>
+        <available file="${localStore}" type="dir" />
+            <then>
+                <delete dir="${localStore}"/>
+            </then>
+    </if>
+    <antcall target="gitClone"/>
+    <antcall target="build"/>
+    <antcall target="gitAddCommitPush"/>
+  </target>
+	
+	
+	<target name = "createIndex" description = "create _index and _obj files in the destination folder" depends="check-build.prop-loc">
+		<taskdef name="createIndex" classpathref="createIndex.classpath" classname="com.sag.acdl.index.RepoIndexerTask"/>
+	<if>
+        <isset  property ="repo.dir"/> 
+		<then>
+		<if>
+		<equals arg1="${repo.dir}" arg2=""/>
+		<then>
+		   <createIndex repoPath="${build.output.dir}" schemaFilePath="${basedir}/lib/acdl-core.xsd"/>
+		 </then>
+		<else>
+		   <createIndex repoPath="${repo.dir}" schemaFilePath="${basedir}/lib/acdl-core.xsd"/>
+		</else>
+	  </if>
+	 </then>
+		<else>
+		   <createIndex repoPath="${build.output.dir}" schemaFilePath="${basedir}/lib/acdl-core.xsd"/>
+		</else>
+	</if>
+
+	</target>
+	
+	<!-- End Target for calling the Deployer Indexer to create _index and _obj files-->
+
+
+	<target name="archive" description="Archive the current build in archive folder">
+		<if>
+			<equals arg1="${build.archive.dir}" arg2=""/>
+			<then>
+				<echo message="Archiving could not be done as the property 'build.archive.dir' is not set" />
+			</then>
+			<else>
+				<mkdir dir="${build.archive.dir}/${build.number}" />
+				<copy todir="${build.archive.dir}/${build.number}">
+					<fileset dir="${build.output.dir}"/>
+				</copy>
+		</else>
+		</if>
+	</target>
+	
+	
+	<!-- the more advanced ant tasks (for, if) require this: -->
+    <taskdef classpath = "${basedir}/../../../common/lib/ant/ant-contrib-1.0b3.jar" resource="net/sf/antcontrib/antlib.xml"/>
+	
+	<!-- 
+		The default target that will ant call for the target for build each product. The call to each build will depend 
+		on the enable/disable parameter set for the corresponding product
+	-->
+	<target name="build" depends="initLog">	
+		<echo message="${ant.version}"/>			
+	
+		<antversion property="ant-is-atleast-8" atleast="1.8" />
+		
+		<if>
+			<isset property="ant-is-atleast-8" />
+			<then>
+				<property name="env.JAVA_MAX_MEM" value="256M"/>
+				<property name="max.mem" value="-Xmx${env.JAVA_MAX_MEM}"/>			
+
+				<property name="env.JAVA_MAX_PERM_SIZE" value="128M"/>
+				<property name="max.perm.size" value="-XX:MaxPermSize=${env.JAVA_MAX_PERM_SIZE}"/>				
+				
+				<antfetch target="createNewBuildNumber" return="build.number"/>				
+				
+				<if>
+					<equals arg1="${enable.checkout}" arg2="true"/>
+					<then>
+						<echo message="Started Checkout task............." />
+						<antcall target="CheckOut"/>
+						<echo message="Checkout task complete............." />
+					</then>
+				</if>
+				    
+        <antcall target="createOutputDir" />
+            
+				<if>
+					<equals arg1="${enable.build.TN}" arg2="true"/>
+					<then>
+						<echo message="Started TN Build............." />
+						<antcall target="buildTN">
+							<param name="build.version" value="${build.number}"/>
+						</antcall>
+						<echo message="TN Build complete..........." />
+					</then>
+				</if>
+				
+				<if>
+				  <equals arg1="${enable.build.ApplicationPlatform}" arg2="true"/>
+					<then>
+						<echo message="Started Application Platform Build............." />
+						<antcall target="buildApplicationPlatform">
+						<param name="build.version" value="${build.number}"/>
+						</antcall>
+						<echo message="Application Platform Build complete..............." />
+					</then>
+				</if>
+				
+				<if>
+					<equals arg1="${enable.build.MWS}" arg2="true"/>
+					<then>
+						<echo message="Started MWS Build............." />
+						<antcall target="buildMWS">
+							<param name="build.version" value="${build.number}"/>
+						</antcall>
+						<echo message="MWS Build complete ..........." />
+					</then>
+				</if>
+				<if>
+					<equals arg1="${enable.build.TaskEngine}" arg2="true"/>
+					<then>
+						<echo message="Started Task Engine Build............." />
+						<antcall target="buildMWS">
+							<param name="build.version" value="${build.number}"/>
+							<param name="task.engine" value="true"/>
+						</antcall>
+						<echo message="Task Engine Build complete ..........." />
+					</then>
+				</if>				
+				<if>
+					<equals arg1="${enable.build.Broker}" arg2="true"/>
+					<then>
+						<echo message="Started Broker Build............." />
+						<antcall target="buildBroker">
+							<param name="build.version" value="${build.number}"/>
+						</antcall>
+						<echo message="Broker Build complete..............." />
+					</then>
+				</if>
+				
+				<if>
+					<equals arg1="${enable.build.IS}" arg2="true"/>
+					<then>
+						<echo message="Started Integration Server Build............." />
+						<antcall target="buildIS">
+							<param name="build.version" value="${build.number}"/>
+						</antcall>
+						<echo message="Integration Server Build complete..........." />
+					</then>
+				</if>
+				
+				<if>
+					<equals arg1="${enable.build.BPM}" arg2="true"/>
+					<then>
+						<echo message="Started BPM Build............." />
+						<antcall target="buildBPM">
+							<param name="build.version" value="${build.number}"/>
+						</antcall>
+						<echo message="BPM Build complete ..........." />
+					</then>
+				</if>
+				
+				<if>
+					<equals arg1="${enable.build.Optimize}" arg2="true"/>
+					<then>
+						<echo message="Started Optimize Build............." />
+						<antcall target="buildOptimize">
+							<param name="build.version" value="${build.number}"/>
+						</antcall>
+						<echo message="Optimize Build complete..............." />
+					</then>
+				</if>
+
+				<if>
+					<equals arg1="${enable.build.EDA}" arg2="true"/>
+					<then>
+						<echo message="Started EDA Build............." />
+						<antcall target="buildEDA">
+							<param name="build.version" value="${build.number}"/>
+						</antcall>
+						<echo message="EDA Build complete ..........." />
+					</then>
+				</if>
+				
+				<if>
+					<equals arg1="${enable.build.RULES}" arg2="true"/>
+					<then>
+						<echo message="Started RULES Build............." />
+						<antcall target="buildRULES">
+							<param name="build.version" value="${build.number}"/>
+						</antcall>
+						<echo message="RULES Build complete..............." />
+					</then>
+				</if>
+				
+				<if>
+				    <equals arg1="${enable.build.UniversalMessaging}" arg2="true"/>
+					<then>
+						<echo message="Started Universal Messaging Build............." />
+						<antcall target="buildUniversalMessaging">
+						<param name="build.version" value="${build.number}"/>
+						</antcall>
+						<echo message="Universal Messaging Build complete..............." />
+					</then>
+				</if>
+				
+				<if>
+				    <equals arg1="${enable.build.AgileApps}" arg2="true"/>
+					<then>
+						<echo message="Started Agile Apps Build............." />
+						<antcall target="buildAgileApps">
+							<param name="build.version" value="${build.number}"/>
+						</antcall>
+						<echo message="Agile Apps Build complete..............." />
+					</then>
+				</if>
+        
+        <if>
+				    <equals arg1="${enable.build.MFT}" arg2="true"/>
+					<then>
+						<echo message="Started MFT Build............." />
+						<antcall target="buildMFT">
+							<param name="build.version" value="${build.number}"/>
+						</antcall>
+						<echo message="MFT Build complete..............." />
+					</then>
+				</if>
+        
+           <if>
+				    <equals arg1="${enable.build.APIGateway}" arg2="true"/>
+					<then>
+						<echo message="Started APIGateway Build............." />
+						<antcall target="buildAPIGateway">
+							<param name="build.version" value="${build.number}"/>
+						</antcall>
+						<echo message="APIGateway Build complete..............." />
+					</then>
+				</if>
+        
+         <if>
+				    <equals arg1="${enable.build.DES}" arg2="true"/>
+					<then>
+						<echo message="Started DES Build............." />
+						<antcall target="buildDES">
+							<param name="build.version" value="${build.number}"/>
+						</antcall>
+						<echo message="DES Build complete..............." />
+					</then>
+				</if>
+				
+        <if>
+				    <equals arg1="${enable.build.CC}" arg2="true"/>
+					<then>
+						<echo message="Started CommandCentral Build............." />
+						<antcall target="buildCC">
+							<param name="build.version" value="${build.number}"/>
+						</antcall>
+						<echo message="CommandCentral Build complete..............." />
+					</then>
+				</if>
+        
+				<antcall target="createIndex"/>
+				
+				<if>
+					<equals arg1="${enable.archive}" arg2="true"/>
+					<then>
+						<echo message="Archiving the build.............${build.number}" />
+						<antcall target="archive"/>
+					</then>
+				</if>
+			</then>
+			<else>
+				<echo message="Incorrect version of ant is being used. Please use version 1.8.2 or more."/>
+				<echo message="Version of ant being used is : ${ant.version}"/>
+			</else>
+		</if>
+	</target>
+	
+
+</project>
