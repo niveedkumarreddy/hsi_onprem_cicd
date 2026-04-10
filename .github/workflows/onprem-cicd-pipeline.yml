@@ -82,25 +82,39 @@ jobs:
         
       - name: Execute ABE build
         run: |
-          $buildScript = "${{ env.SAG_INSTALL_DIR }}/common/AssetBuildEnvironment/bin/build.bat"
+          $antHome = "${{ env.SAG_INSTALL_DIR }}/common/lib/ant"
+          $antBin = "$antHome/bin/ant.bat"
+          $buildXml = "${{ env.SAG_INSTALL_DIR }}/common/AssetBuildEnvironment/master_build/build.xml"
           
-          if (Test-Path $buildScript) {
-            Write-Host "Starting ABE build process..."
-            
-            & $buildScript `
-              -Dbuild.output.dir="${{ env.BUILD_OUTPUT_DIR }}" `
-              -Dbuild.source.dir="${{ env.BUILD_SOURCE_DIR }}" `
-              -Denable.build.IS=true
-            
-            if ($LASTEXITCODE -eq 0) {
-              Write-Host "Build completed successfully"
-            } else {
-              Write-Host "Build failed with exit code: $LASTEXITCODE"
-              exit $LASTEXITCODE
-            }
-          } else {
-            Write-Host "Error: Build script not found at $buildScript"
+          if (-not (Test-Path $antBin)) {
+            Write-Host "Error: ANT not found at $antBin"
             exit 1
+          }
+          
+          if (-not (Test-Path $buildXml)) {
+            Write-Host "Error: build.xml not found at $buildXml"
+            exit 1
+          }
+          
+          Write-Host "Starting ABE build process..."
+          Write-Host "ANT Home: $antHome"
+          Write-Host "Build XML: $buildXml"
+          
+          # Set ANT_HOME environment variable
+          $env:ANT_HOME = $antHome
+          
+          # Call ANT directly with the build.xml
+          & $antBin `
+            -f $buildXml `
+            "-Dbuild.output.dir=${{ env.BUILD_OUTPUT_DIR }}" `
+            "-Dbuild.source.dir=${{ env.BUILD_SOURCE_DIR }}" `
+            "-Denable.build.IS=true"
+          
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "Build completed successfully"
+          } else {
+            Write-Host "Build failed with exit code: $LASTEXITCODE"
+            exit $LASTEXITCODE
           }
         shell: powershell
         
