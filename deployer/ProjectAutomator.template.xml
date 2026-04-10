@@ -33,12 +33,12 @@
         </IS>
         
         <!-- Universal Messaging (if needed) -->
-        <UM>
-            <umalias name="@TARGET_ENV@_UM">
-                <url>nsp://@UM_HOST@:@UM_PORT@</url>
+        <UniversalMessaging>
+            <universalmessagingalias name="@TARGET_ENV@_UM">
+                <realmURL>nsp://@UM_HOST@:@UM_PORT@</realmURL>
                 <Test>false</Test>
-            </umalias>
-        </UM>
+            </universalmessagingalias>
+        </UniversalMessaging>
     </Environment>
     
     <!-- Deployment Projects -->
