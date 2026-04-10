@@ -65,7 +65,7 @@ jobs:
   rollback-test:
     name: Rollback TEST Environment
     needs: validate-rollback
-    runs-on: [self-hosted, webmethods-build]
+    runs-on: [self-hosted, hsi, onprem, windows]
     if: github.event.inputs.environment == 'TEST'
     environment:
       name: TEST
@@ -148,7 +148,7 @@ jobs:
   rollback-prod:
     name: Rollback PROD Environment
     needs: validate-rollback
-    runs-on: [self-hosted, webmethods-build]
+    runs-on: [self-hosted, hsi, onprem, windows]
     if: github.event.inputs.environment == 'PROD'
     environment:
       name: PROD
@@ -231,7 +231,7 @@ jobs:
   post-rollback-tests:
     name: Post-Rollback Verification Tests
     needs: [rollback-test, rollback-prod]
-    runs-on: [self-hosted, webmethods-build]
+    runs-on: [self-hosted, hsi, onprem, windows]
     if: always() && (needs.rollback-test.result == 'success' || needs.rollback-prod.result == 'success')
     
     steps:

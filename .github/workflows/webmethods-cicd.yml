@@ -34,7 +34,7 @@ env:
 jobs:
   build:
     name: Build webMethods Assets
-    runs-on: [self-hosted, webmethods-build]
+    runs-on: [self-hosted, hsi, onprem, windows]
     outputs:
       build-number: ${{ steps.build-info.outputs.build-number }}
       fbr-path: ${{ steps.build-info.outputs.fbr-path }}
@@ -146,7 +146,7 @@ jobs:
   deploy-dev:
     name: Deploy to DEV
     needs: build
-    runs-on: [self-hosted, webmethods-build]
+    runs-on: [self-hosted, hsi, onprem, windows]
     if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     environment:
       name: DEV
@@ -219,7 +219,7 @@ jobs:
   test-dev:
     name: Test on DEV
     needs: deploy-dev
-    runs-on: [self-hosted, webmethods-build]
+    runs-on: [self-hosted, hsi, onprem, windows]
     if: github.event.inputs.skip_tests != 'true'
     
     steps:
@@ -266,7 +266,7 @@ jobs:
   deploy-test:
     name: Deploy to TEST (3 Servers)
     needs: test-dev
-    runs-on: [self-hosted, webmethods-build]
+    runs-on: [self-hosted, hsi, onprem, windows]
     if: github.ref == 'refs/heads/main'
     environment:
       name: TEST
@@ -319,7 +319,7 @@ jobs:
   test-test:
     name: Test on TEST
     needs: deploy-test
-    runs-on: [self-hosted, webmethods-build]
+    runs-on: [self-hosted, hsi, onprem, windows]
     if: github.event.inputs.skip_tests != 'true'
     
     steps:
@@ -359,7 +359,7 @@ jobs:
   deploy-prod:
     name: Deploy to PROD (3 Servers)
     needs: test-test
-    runs-on: [self-hosted, webmethods-build]
+    runs-on: [self-hosted, hsi, onprem, windows]
     if: github.ref == 'refs/heads/main'
     environment:
       name: PROD
