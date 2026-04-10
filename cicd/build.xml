@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project name="webMethods-CICD" default="buildDeployTest" basedir="..">
     
-    <!-- Load properties file - use deploy.properties if specified, otherwise build.properties -->
-    <!-- Set default if not provided via -D -->
+    <!-- Load properties file - command-line -D has highest precedence -->
+    <!-- If not specified via -D, default to build.properties -->
     <property name="project.properties" value="build.properties"/>
-    <!-- Load the specified properties file -->
+    <!-- Load ONLY the specified properties file (not both) -->
     <property file="${basedir}/${project.properties}"/>
     <property name="cicd.home" value="${basedir}/cicd"/>
     

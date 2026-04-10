@@ -235,7 +235,7 @@ jobs:
           Write-Host "Starting deployment to DEV..."
           
           ant -f build.xml deploy `
-            -Dproject.properties="deploy.properties" `
+            "-Dproject.properties=deploy.properties" `
             -verbose
           
           "✅ Deployment to DEV completed" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
@@ -345,7 +345,7 @@ jobs:
           Write-Host "Deploying to ${{ matrix.server }}-server.company.com:5555..."
           
           ant -f build.xml deploy `
-            -Dproject.properties="${{ github.workspace }}/deploy-test-${{ matrix.server }}.properties" `
+            "-Dproject.properties=deploy-test-${{ matrix.server }}.properties" `
             -verbose
           
           "✅ Deployed to TEST-${{ matrix.server }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
@@ -446,7 +446,7 @@ jobs:
           Write-Host "Deploying to ${{ matrix.server }}-server.company.com:5555..."
           
           ant -f build.xml deploy `
-            -Dproject.properties="${{ github.workspace }}/deploy-prod-${{ matrix.server }}.properties" `
+            "-Dproject.properties=deploy-prod-${{ matrix.server }}.properties" `
             -verbose
           
           "✅ Deployed to PROD-${{ matrix.server }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
