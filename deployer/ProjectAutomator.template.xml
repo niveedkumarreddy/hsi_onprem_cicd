@@ -75,13 +75,9 @@
             </MapSetMapping>
             
             <!-- Deployment Candidate (Deploy phase) -->
-            <DeploymentCandidate description="Deploy to @TARGET_ENV@" 
-                                mapName="MainDeploymentMap" 
-                                name="MainDeploymentCandidate">
-                <!-- Variable Substitution -->
-                <variableSubstitution>@DO_VARSUB@</variableSubstitution>
-                <variableSubstitutionFile>@VARSUB_DIR@/@TARGET_ENV@_varsub.xml</variableSubstitutionFile>
-            </DeploymentCandidate>
+            <DeploymentCandidate description="Deploy to @TARGET_ENV@"
+                                mapName="MainDeploymentMap"
+                                name="MainDeploymentCandidate"/>
         </Project>
     </Projects>
 </DeployerSpec>
