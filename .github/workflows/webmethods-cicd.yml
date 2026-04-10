@@ -231,7 +231,7 @@ jobs:
           Write-Host "Starting deployment to DEV..."
           
           ant -f build.xml deploy `
-            -Dproject.properties="${{ github.workspace }}/deploy.properties" `
+            -Dproject.properties="deploy.properties" `
             -verbose
           
           "✅ Deployment to DEV completed" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
