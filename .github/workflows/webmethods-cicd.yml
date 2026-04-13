@@ -208,10 +208,10 @@ jobs:
           
           # Deployer Configuration
           config.deployer.deployerInstallationPath=$env:SAG_HOME/IntegrationServer/instances/default/packages/WmDeployer/bin
-          config.deployer.deployerHost=${{ secrets.DEPLOYER_HOST }}
-          config.deployer.deployerPort=${{ secrets.DEPLOYER_PORT }}
-          config.deployer.deployerUsername=${{ secrets.DEPLOYER_USERNAME }}
-          config.deployer.deployerPassword=${{ secrets.DEPLOYER_PASSWORD }}
+          config.deployer.deployerHost=${{ secrets.DEPLOYER_HOST || 'localhost' }}
+          config.deployer.deployerPort=${{ secrets.DEPLOYER_PORT || '5555' }}
+          config.deployer.deployerUsername=${{ secrets.DEPLOYER_USERNAME || 'Administrator' }}
+          config.deployer.deployerPassword=${{ secrets.DEPLOYER_PASSWORD || 'manage' }}
           config.deployer.projectNamePrefix=DEV_${{ github.run_number }}
           
           # Variable Substitution
