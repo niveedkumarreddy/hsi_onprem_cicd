@@ -69,14 +69,14 @@
         
         <echo message="ABE build execution completed"/>
         
-        <!-- Copy ABE output from its default location to workspace build directory -->
-        <echo message="Copying ABE output to workspace build directory..."/>
-        <copy todir="${config.build.buildStorageDir}" overwrite="true" failonerror="false">
+        <!-- Copy ABE output from its default location to FBR repository directory -->
+        <echo message="Copying ABE output to FBR repository: ${fbrRepoDir}"/>
+        <copy todir="${fbrRepoDir}" overwrite="true" failonerror="false">
             <fileset dir="C:/Users/NiveedKumarReddyBoll/Customer_Projects/Henry_Schen/implementation/build">
                 <include name="**/*"/>
             </fileset>
         </copy>
-        <echo message="ABE output copied successfully"/>
+        <echo message="ABE output copied to ${fbrRepoDir}"/>
     </target>
     
     <!-- Verify build output -->
