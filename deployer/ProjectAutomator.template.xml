@@ -74,11 +74,10 @@
                 <alias type="IS">@TARGET_ENV@_IS</alias>
             </MapSetMapping>
             
-            <!-- Deployment Candidate (Deploy phase with auto-execute) -->
+            <!-- Deployment Candidate (Deploy phase) -->
             <DeploymentCandidate description="Deploy to @TARGET_ENV@"
                                 mapName="MainDeploymentMap"
-                                name="MainDeploymentCandidate"
-                                execute="true"/>
+                                name="MainDeploymentCandidate"/>
         </Project>
     </Projects>
 </DeployerSpec>

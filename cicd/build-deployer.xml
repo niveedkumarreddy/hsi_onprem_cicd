@@ -2,7 +2,7 @@
 <project name="Deployer-Automation" basedir="..">
     
     <!-- Deployment Target -->
-    <target name="deployer.deploy" depends="deployer.init, deployer.generatePA, deployer.executePA, deployer.verify">
+    <target name="deployer.deploy" depends="deployer.init, deployer.generatePA, deployer.executePA, deployer.executeDeploy, deployer.verify">
         <echo message="Deployment completed successfully"/>
     </target>
     
@@ -117,15 +117,16 @@
         <echo message="Project: ${project.full.name}"/>
         <echo message="Log: ${deployer.log.file}"/>
         
-        <!-- Execute Deployer -->
+        <!-- Execute Deployer with deployment candidate -->
         <exec executable="${deployer.full.path}"
               dir="${config.deployer.deployerInstallationPath}"
               failonerror="false"
               resultproperty="deployer.result"
               output="${deployer.log.file}">
-            <arg value="--deploy"/>
             <arg value="-project"/>
             <arg value="${project.full.name}"/>
+            <arg value="-dc"/>
+            <arg value="MainDeploymentCandidate"/>
             <arg value="-host"/>
             <arg value="${config.deployer.deployerHost}"/>
             <arg value="-port"/>
@@ -134,7 +135,7 @@
             <arg value="${config.deployer.deployerUsername}"/>
             <arg value="-pwd"/>
             <arg value="${config.deployer.deployerPassword}"/>
-            <arg value="-force"/>
+            <arg value="-execute"/>
         </exec>
         
         <!-- Check result (8 = error, 0 = success) -->
