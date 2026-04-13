@@ -177,6 +177,8 @@ jobs:
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
+        with:
+          clean: false
       
       - name: Download Build Artifacts
         uses: actions/download-artifact@v4
@@ -320,6 +322,8 @@ jobs:
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
+        with:
+          clean: false
       
       - name: Download Build Artifacts
         uses: actions/download-artifact@v4
@@ -419,6 +423,8 @@ jobs:
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
+        with:
+          clean: false
       
       - name: Download Build Artifacts
         uses: actions/download-artifact@v4
