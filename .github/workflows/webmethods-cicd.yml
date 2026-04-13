@@ -90,9 +90,9 @@ jobs:
           
           # Build Output
           config.tmpdir=$WORKSPACE/tmp
-          config.build.buildStorageDir=$WORKSPACE/build
+          config.build.buildStorageDir=$WORKSPACE/tmp/fbr
           fbrRepoName=$env:PROJECT_NAME`_${{ github.run_number }}
-          fbrRepoDir=$WORKSPACE/build
+          fbrRepoDir=$WORKSPACE/tmp/fbr/$env:PROJECT_NAME`_${{ github.run_number }}
           
           # ABE Configuration
           config.build.abeHome=$SAG_HOME_UNIX/common/AssetBuildEnvironment
@@ -118,14 +118,14 @@ jobs:
           ant -f build.xml build -verbose
           
           Write-Host "Build completed. Checking output..."
-          if (Test-Path "${{ github.workspace }}/build") {
-            Get-ChildItem "${{ github.workspace }}/build" -Recurse | Select-Object -First 10
+          if (Test-Path "${{ github.workspace }}/tmp/fbr") {
+            Get-ChildItem "${{ github.workspace }}/tmp/fbr" -Recurse | Select-Object -First 10
           }
       
       - name: Validate Build Output
         shell: powershell
         run: |
-          $BUILD_DIR = "${{ github.workspace }}/build"
+          $BUILD_DIR = "${{ github.workspace }}/tmp/fbr"
           if (-not (Test-Path $BUILD_DIR)) {
             Write-Error "ERROR: Build output directory not found: $BUILD_DIR"
             exit 1
@@ -143,7 +143,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build-artifacts-${{ github.run_number }}
-          path: build/**
+          path: |
+            tmp/fbr/**
+            build-manifest.json
           retention-days: 30
           compression-level: 6
       
@@ -195,7 +197,7 @@ jobs:
           bda.projectName=$env:PROJECT_NAME
           bda.buildNumber=${{ github.run_number }}
           
-          # Repository Configuration
+          # Repository Configuration (must match build output)
           fbrRepoName=$env:PROJECT_NAME`_${{ github.run_number }}
           fbrRepoDir=${{ github.workspace }}/tmp/fbr/$env:PROJECT_NAME`_${{ github.run_number }}
           
