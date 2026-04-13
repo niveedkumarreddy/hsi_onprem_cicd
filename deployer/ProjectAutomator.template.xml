@@ -13,7 +13,7 @@
         <Repository>
             <repalias name="@FBR_REPO_NAME@">
                 <type>FlatFile</type>
-                <urlOrDirectory>@VARSUB_DIR@/../tmp/fbr/@FBR_REPO_NAME@</urlOrDirectory>
+                <urlOrDirectory>@FBR_REPO_DIR@</urlOrDirectory>
                 <Test>false</Test>
             </repalias>
         </Repository>

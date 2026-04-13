@@ -42,6 +42,7 @@
                 <filter token="PROJECT_NAME" value="${bda.projectName}"/>
                 <filter token="TARGET_ENV" value="${TARGET_ENV}"/>
                 <filter token="FBR_REPO_NAME" value="${fbrRepoName}"/>
+                <filter token="FBR_REPO_DIR" value="${fbrRepoDir}"/>
                 <filter token="IS_HOST" value="${IS_HOST}"/>
                 <filter token="IS_PORT" value="${IS_PORT}"/>
                 <filter token="IS_USERNAME" value="${IS_USERNAME}"/>
