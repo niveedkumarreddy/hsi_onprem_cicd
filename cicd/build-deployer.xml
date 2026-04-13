@@ -111,7 +111,8 @@
         
         <property name="deployer.full.path" value="${config.deployer.deployerInstallationPath}/${deployer.exe}"/>
         <property name="deployer.log.file" value="${config.deployer.deployerInstallationPath}/../logs/Deployer.log"/>
-        <property name="project.full.name" value="${config.deployer.projectNamePrefix}_${bda.targetEnv}_${bda.buildNumber}"/>
+        <!-- Project name must match ProjectAutomator: projectPrefix + projectName_buildNumber -->
+        <property name="project.full.name" value="${bda.targetEnv}${bda.projectName}_${bda.buildNumber}"/>
         
         <echo message="Executing: ${deployer.full.path}"/>
         <echo message="Project: ${project.full.name}"/>
