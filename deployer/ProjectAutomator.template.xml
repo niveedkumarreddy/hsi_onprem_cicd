@@ -74,17 +74,11 @@
                 <alias type="IS">@TARGET_ENV@_IS</alias>
             </MapSetMapping>
             
-            <!-- Deployment Candidate (Deploy phase) -->
+            <!-- Deployment Candidate (Deploy phase with auto-execute) -->
             <DeploymentCandidate description="Deploy to @TARGET_ENV@"
                                 mapName="MainDeploymentMap"
-                                name="MainDeploymentCandidate"/>
-            
-            <!-- Execute the deployment -->
-            <Activate candidateName="MainDeploymentCandidate">
-                <property name="enableRollback">true</property>
-                <property name="enableBackup">true</property>
-                <property name="deploymentSetReport">true</property>
-            </Activate>
+                                name="MainDeploymentCandidate"
+                                execute="true"/>
         </Project>
     </Projects>
 </DeployerSpec>
