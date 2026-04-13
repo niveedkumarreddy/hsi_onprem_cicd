@@ -77,14 +77,14 @@
             <!-- Deployment Candidate (Deploy phase) -->
             <DeploymentCandidate description="Deploy to @TARGET_ENV@"
                                 mapName="MainDeploymentMap"
-                                name="MainDeploymentCandidate">
-                <!-- Execute the deployment -->
-                <Activate>
-                    <property name="enableRollback">true</property>
-                    <property name="enableBackup">true</property>
-                    <property name="deploymentSetReport">true</property>
-                </Activate>
-            </DeploymentCandidate>
+                                name="MainDeploymentCandidate"/>
+            
+            <!-- Execute the deployment -->
+            <Activate candidateName="MainDeploymentCandidate">
+                <property name="enableRollback">true</property>
+                <property name="enableBackup">true</property>
+                <property name="deploymentSetReport">true</property>
+            </Activate>
         </Project>
     </Projects>
 </DeployerSpec>
