@@ -187,6 +187,9 @@ jobs:
       - name: Prepare Deployment Configuration
         shell: powershell
         run: |
+          # Convert workspace path to forward slashes for ANT compatibility
+          $WORKSPACE = "${{ github.workspace }}".Replace('\', '/')
+          
           @"
           # Deployment Configuration for DEV
           
@@ -199,7 +202,7 @@ jobs:
           
           # Repository Configuration (must match build output)
           fbrRepoName=$env:PROJECT_NAME`_${{ github.run_number }}
-          fbrRepoDir=${{ github.workspace }}/tmp/fbr/$env:PROJECT_NAME`_${{ github.run_number }}
+          fbrRepoDir=$WORKSPACE/tmp/fbr/$env:PROJECT_NAME`_${{ github.run_number }}
           
           # Deployer Configuration
           config.deployer.deployerInstallationPath=$env:SAG_HOME/IntegrationServer/instances/default/packages/WmDeployer/bin
@@ -261,13 +264,15 @@ jobs:
       - name: Prepare Test Configuration
         shell: powershell
         run: |
+          $WORKSPACE = "${{ github.workspace }}".Replace('\', '/')
+          
           @"
           bda.targetEnv=DEV
           bda.projectName=$env:PROJECT_NAME
-          isTestDir=${{ github.workspace }}/tests
-          config.test.reportDir=${{ github.workspace }}/report
+          isTestDir=$WORKSPACE/tests
+          config.test.reportDir=$WORKSPACE/report
           config.test.failBuildOnTestError=true
-          environmentsDefinition=${{ github.workspace }}/ENV.groovy
+          environmentsDefinition=$WORKSPACE/ENV.groovy
           config.build.abeHome=$env:SAG_HOME/common/AssetBuildEnvironment
           "@ | Out-File -FilePath test.properties -Encoding UTF8
       
@@ -325,12 +330,14 @@ jobs:
       - name: Deploy to TEST-${{ matrix.server }}
         shell: powershell
         run: |
+          $WORKSPACE = "${{ github.workspace }}".Replace('\', '/')
+          
           @"
           bda.targetEnv=TEST
           bda.projectName=$env:PROJECT_NAME
           bda.buildNumber=${{ github.run_number }}
           fbrRepoName=$env:PROJECT_NAME`_${{ github.run_number }}
-          fbrRepoDir=${{ github.workspace }}/tmp/fbr/$env:PROJECT_NAME`_${{ github.run_number }}
+          fbrRepoDir=$WORKSPACE/tmp/fbr/$env:PROJECT_NAME`_${{ github.run_number }}
           config.deployer.deployerInstallationPath=$env:SAG_HOME/IntegrationServer/instances/default/packages/WmDeployer/bin
           config.deployer.deployerHost=${{ secrets.DEPLOYER_HOST }}
           config.deployer.deployerPort=${{ secrets.DEPLOYER_PORT }}
@@ -338,8 +345,8 @@ jobs:
           config.deployer.deployerPassword=${{ secrets.DEPLOYER_PASSWORD }}
           config.deployer.projectNamePrefix=TEST_${{ matrix.server }}_${{ github.run_number }}
           config.deployer.doVarSub=true
-          varsubDir=${{ github.workspace }}/varsub
-          environmentsDefinition=${{ github.workspace }}/ENV.groovy
+          varsubDir=$WORKSPACE/varsub
+          environmentsDefinition=$WORKSPACE/ENV.groovy
           config.tmpdir=tmp
           "@ | Out-File -FilePath deploy-test-${{ matrix.server }}.properties -Encoding UTF8
           
@@ -365,13 +372,15 @@ jobs:
       - name: Run Tests on TEST
         shell: powershell
         run: |
+          $WORKSPACE = "${{ github.workspace }}".Replace('\', '/')
+          
           @"
           bda.targetEnv=TEST
           bda.projectName=$env:PROJECT_NAME
-          isTestDir=${{ github.workspace }}/tests
-          config.test.reportDir=${{ github.workspace }}/report
+          isTestDir=$WORKSPACE/tests
+          config.test.reportDir=$WORKSPACE/report
           config.test.failBuildOnTestError=true
-          environmentsDefinition=${{ github.workspace }}/ENV.groovy
+          environmentsDefinition=$WORKSPACE/ENV.groovy
           config.build.abeHome=$env:SAG_HOME/common/AssetBuildEnvironment
           "@ | Out-File -FilePath test-test.properties -Encoding UTF8
           
@@ -426,12 +435,14 @@ jobs:
       - name: Deploy to PROD-${{ matrix.server }}
         shell: powershell
         run: |
+          $WORKSPACE = "${{ github.workspace }}".Replace('\', '/')
+          
           @"
           bda.targetEnv=PROD
           bda.projectName=$env:PROJECT_NAME
           bda.buildNumber=${{ github.run_number }}
           fbrRepoName=$env:PROJECT_NAME`_${{ github.run_number }}
-          fbrRepoDir=${{ github.workspace }}/tmp/fbr/$env:PROJECT_NAME`_${{ github.run_number }}
+          fbrRepoDir=$WORKSPACE/tmp/fbr/$env:PROJECT_NAME`_${{ github.run_number }}
           config.deployer.deployerInstallationPath=$env:SAG_HOME/IntegrationServer/instances/default/packages/WmDeployer/bin
           config.deployer.deployerHost=${{ secrets.DEPLOYER_HOST }}
           config.deployer.deployerPort=${{ secrets.DEPLOYER_PORT }}
@@ -439,8 +450,8 @@ jobs:
           config.deployer.deployerPassword=${{ secrets.DEPLOYER_PASSWORD }}
           config.deployer.projectNamePrefix=PROD_${{ matrix.server }}_${{ github.run_number }}
           config.deployer.doVarSub=true
-          varsubDir=${{ github.workspace }}/varsub
-          environmentsDefinition=${{ github.workspace }}/ENV.groovy
+          varsubDir=$WORKSPACE/varsub
+          environmentsDefinition=$WORKSPACE/ENV.groovy
           config.tmpdir=tmp
           "@ | Out-File -FilePath deploy-prod-${{ matrix.server }}.properties -Encoding UTF8
           
