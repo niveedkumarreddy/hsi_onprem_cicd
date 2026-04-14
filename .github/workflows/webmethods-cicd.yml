@@ -183,7 +183,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
       
-      - name: Cache SonarQube Packages
+      - name: Cache SonarQube Analysis Data
         uses: actions/cache@v4
         with:
           path: ~/.sonar/cache
@@ -191,14 +191,22 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-sonar-
       
-      - name: Download and Setup SonarScanner
+      - name: Cache SonarScanner CLI
+        uses: actions/cache@v4
+        with:
+          path: sonar-scanner
+          key: sonar-scanner-5.0.1.3006-windows
+          restore-keys: |
+            sonar-scanner-
+      
+      - name: Setup SonarScanner
         shell: powershell
         run: |
           $scannerDir = "sonar-scanner"
           $scannerVersion = "5.0.1.3006"
           
           if (-not (Test-Path $scannerDir)) {
-            Write-Host "Downloading SonarScanner..."
+            Write-Host "SonarScanner not in cache. Downloading..."
             $url = "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$scannerVersion-windows.zip"
             Invoke-WebRequest -Uri $url -OutFile "sonar-scanner.zip"
             
@@ -206,9 +214,12 @@ jobs:
             Expand-Archive -Path "sonar-scanner.zip" -DestinationPath "."
             Rename-Item "sonar-scanner-$scannerVersion-windows" $scannerDir
             Remove-Item "sonar-scanner.zip"
+          } else {
+            Write-Host "Using cached SonarScanner"
           }
           
           Write-Host "SonarScanner ready at: $scannerDir"
+          & "$scannerDir/bin/sonar-scanner.bat" --version
       
       - name: Run SonarQube Analysis
         shell: powershell
