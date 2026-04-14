@@ -23,6 +23,7 @@ hsi_onprem_cicd/
 ├── .github/
 │   └── workflows/
 │       ├── webmethods-cicd.yml      # Main CI/CD pipeline
+│       ├── sonarqube.yml             # Code quality analysis
 │       └── rollback.yml              # Rollback workflow
 ├── cicd/                             # Custom CI/CD Framework
 │   ├── build.xml                    # Main orchestrator
@@ -43,9 +44,17 @@ hsi_onprem_cicd/
 │   ├── DEV/
 │   ├── TEST/
 │   └── PROD/
+├── deployer/                         # Deployer configuration
+│   ├── ProjectAutomator.template.xml
+│   └── environments/
+│       ├── DEV.properties
+│       ├── TEST.properties
+│       └── PROD.properties
 ├── ENV.groovy                        # Environment definitions
 ├── build.properties                  # Build configuration
+├── sonar-project.properties          # SonarQube configuration
 ├── FRAMEWORK_DOCUMENTATION.md        # Detailed framework docs
+├── SONARQUBE_SETUP.md               # SonarQube setup guide
 └── README.md
 ```
 
@@ -81,12 +90,21 @@ Navigate to **Settings → Secrets and variables → Actions → New repository 
 
 Add the following secrets:
 
+**Deployment Secrets:**
 ```
 DEPLOYER_HOST=deployer.company.com
 DEPLOYER_PORT=5555
 DEPLOYER_USERNAME=Administrator
 DEPLOYER_PASSWORD=manage
 ```
+
+**SonarQube Secrets (Required for code quality gating):**
+```
+SONAR_TOKEN=your_sonarqube_token
+SONAR_HOST_URL=http://sonarqube.company.com:9000
+```
+
+**⚠️ Important**: SonarQube is integrated as a mandatory quality gate before DEV deployment. The pipeline will block deployment if quality gate fails. See [SONARQUBE_SETUP.md](SONARQUBE_SETUP.md) for detailed configuration.
 
 ### Step 3: Setup Self-Hosted Runner
 
@@ -141,7 +159,7 @@ sudo ./svc.sh status
 **Settings → Branches → Add rule for `main`**:
 - ✅ Require pull request reviews (1 approval)
 - ✅ Require status checks to pass before merging
-  - Select: `build`, `test-dev`
+  - Select: `build`, `code-quality`, `test-dev`
 - ✅ Require branches to be up to date before merging
 - ✅ Include administrators
 
@@ -164,14 +182,17 @@ ant -f build.xml init
 ```mermaid
 graph LR
     A[Push to main] --> B[Build with ABE]
-    B --> C[Deploy DEV]
-    C --> D[Test DEV]
-    D --> E{Approve TEST?}
-    E -->|Yes| F[Deploy TEST 1-3]
-    F --> G[Test TEST]
-    G --> H{Approve PROD?}
-    H -->|Yes| I[Deploy PROD 1-3]
-    I --> J[Create Release]
+    B --> C[Code Quality Check]
+    C --> D{Quality Gate?}
+    D -->|PASS| E[Deploy DEV]
+    D -->|FAIL| Z[STOP - Fix Issues]
+    E --> F[Test DEV]
+    F --> G{Approve TEST?}
+    G -->|Yes| H[Deploy TEST 1-3]
+    H --> I[Test TEST]
+    I --> J{Approve PROD?}
+    J -->|Yes| K[Deploy PROD 1-3]
+    K --> L[Create Release]
 ```
 
 **Framework**: All build, deployment, and test operations use the custom `cicd/` framework.
@@ -180,36 +201,43 @@ graph LR
 
 1. **Build** (Automatic)
    - Checkout code
-   - Execute `cicd/build.xml` with ABE
-   - Create file-based repository (FBR)
-   - Archive artifacts (30-day retention)
+   - Build with Asset Build Environment (ABE)
+   - Create File-Based Repository (FBR)
+   - Archive build artifacts
 
-2. **Deploy to DEV** (Automatic on main)
+2. **Code Quality** (Automatic - Quality Gate)
+   - Run SonarQube analysis
+   - Check quality gate status
+   - **BLOCKS deployment if quality gate fails**
+   - Add PR comments with results
+   - Upload analysis reports
+
+3. **Deploy to DEV** (Automatic - Only if quality gate passes)
    - Download build artifacts
    - Generate Project Automator XML (Groovy script)
    - Execute deployment via `cicd/build-deployer.xml`
    - Apply variable substitution from `varsub/DEV/`
 
-3. **Test on DEV** (Automatic)
+4. **Test on DEV** (Automatic)
    - Execute `cicd/build-test.xml`
    - Run WmTestSuite tests
    - Generate JUnit XML reports
    - Publish results to GitHub Actions
 
-4. **Deploy to TEST** (Manual approval required)
+5. **Deploy to TEST** (Manual approval required - 1 reviewer)
    - Sequential deployment to 3 servers
    - Apply TEST-specific variables
 
-5. **Test on TEST** (Automatic)
+6. **Test on TEST** (Automatic)
    - Run integration tests
    - Validate deployment
 
-6. **Deploy to PROD** (Manual approval required)
+7. **Deploy to PROD** (Manual approval required - 2 reviewers)
    - Sequential deployment to 3 servers
    - 2-minute wait between servers
    - Apply PROD-specific variables
 
-7. **Create Release** (Automatic)
+8. **Create Release** (Automatic)
    - Tag release
    - Generate release notes
 

@@ -165,9 +165,164 @@ jobs:
           "@ | Out-File -FilePath build-manifest.json -Encoding UTF8
           Get-Content build-manifest.json
 
+  code-quality:
+    name: Code Quality Analysis
+    needs: build
+    runs-on: [self-hosted, hsi, onprem, windows]
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for better analysis
+      
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      
+      - name: Cache SonarQube Packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar-${{ hashFiles('**/sonar-project.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-sonar-
+      
+      - name: Download and Setup SonarScanner
+        shell: powershell
+        run: |
+          $scannerDir = "sonar-scanner"
+          $scannerVersion = "5.0.1.3006"
+          
+          if (-not (Test-Path $scannerDir)) {
+            Write-Host "Downloading SonarScanner..."
+            $url = "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$scannerVersion-windows.zip"
+            Invoke-WebRequest -Uri $url -OutFile "sonar-scanner.zip"
+            
+            Write-Host "Extracting SonarScanner..."
+            Expand-Archive -Path "sonar-scanner.zip" -DestinationPath "."
+            Rename-Item "sonar-scanner-$scannerVersion-windows" $scannerDir
+            Remove-Item "sonar-scanner.zip"
+          }
+          
+          Write-Host "SonarScanner ready at: $scannerDir"
+      
+      - name: Run SonarQube Analysis
+        shell: powershell
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $scannerPath = "./sonar-scanner/bin/sonar-scanner.bat"
+          
+          # Base parameters
+          $params = @(
+            "-Dsonar.projectKey=${{ env.PROJECT_NAME }}",
+            "-Dsonar.projectName=${{ env.PROJECT_NAME }}",
+            "-Dsonar.sources=packages,cicd,deployer",
+            "-Dsonar.tests=tests",
+            "-Dsonar.host.url=$env:SONAR_HOST_URL",
+            "-Dsonar.token=$env:SONAR_TOKEN",
+            "-Dsonar.scm.provider=git"
+          )
+          
+          # Add PR-specific parameters if this is a pull request
+          if ("${{ github.event_name }}" -eq "pull_request") {
+            $params += "-Dsonar.pullrequest.key=${{ github.event.pull_request.number }}"
+            $params += "-Dsonar.pullrequest.branch=${{ github.head_ref }}"
+            $params += "-Dsonar.pullrequest.base=${{ github.base_ref }}"
+            $params += "-Dsonar.pullrequest.github.repository=${{ github.repository }}"
+          }
+          else {
+            # Branch analysis for push events
+            $params += "-Dsonar.branch.name=${{ github.ref_name }}"
+          }
+          
+          Write-Host "Running SonarQube analysis..."
+          Write-Host "Parameters: $($params -join ' ')"
+          
+          & $scannerPath $params
+          
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "SonarQube analysis failed with exit code $LASTEXITCODE"
+            exit $LASTEXITCODE
+          }
+      
+      - name: Wait for Quality Gate
+        uses: sonarsource/sonarqube-quality-gate-action@master
+        timeout-minutes: 5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        id: quality-gate
+      
+      - name: Quality Gate Status
+        shell: powershell
+        run: |
+          $status = "${{ steps.quality-gate.outputs.quality-gate-status }}"
+          
+          if ($status -eq "PASSED") {
+            Write-Host "✅ Quality Gate PASSED - Proceeding to DEV deployment"
+            "### ✅ SonarQube Quality Gate: PASSED" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+            "Code quality check passed. Deployment to DEV will proceed." | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          }
+          elseif ($status -eq "FAILED") {
+            Write-Host "❌ Quality Gate FAILED - Blocking DEV deployment"
+            "### ❌ SonarQube Quality Gate: FAILED" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+            "Code quality issues detected. Deployment to DEV is blocked." | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+            "Please review and fix the issues in SonarQube dashboard before deploying." | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+            exit 1
+          }
+          else {
+            Write-Host "⚠️ Quality Gate status: $status"
+            "### ⚠️ SonarQube Quality Gate: $status" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          }
+          
+          "View full report: ${{ secrets.SONAR_HOST_URL }}/dashboard?id=${{ env.PROJECT_NAME }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+      
+      - name: Upload SonarQube Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sonarqube-report-${{ github.run_number }}
+          path: .scannerwork/report-task.txt
+          retention-days: 30
+      
+      - name: Comment PR with Results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const status = '${{ steps.quality-gate.outputs.quality-gate-status }}';
+            const icon = status === 'PASSED' ? '✅' : '❌';
+            const sonarUrl = '${{ secrets.SONAR_HOST_URL }}';
+            const projectKey = '${{ env.PROJECT_NAME }}';
+            const prNumber = '${{ github.event.pull_request.number }}';
+            
+            const comment = `## ${icon} SonarQube Analysis Results
+            
+            **Quality Gate:** ${status}
+            
+            📊 [View Full Report](${sonarUrl}/dashboard?id=${projectKey}&pullRequest=${prNumber})
+            
+            ${status === 'FAILED' ? '⚠️ Code quality issues detected. DEV deployment will be blocked until issues are resolved.' : '✅ Code quality check passed. Ready for DEV deployment.'}
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
   deploy-dev:
     name: Deploy to DEV
-    needs: build
+    needs: [build, code-quality]
     runs-on: [self-hosted, hsi, onprem, windows]
     if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     environment:

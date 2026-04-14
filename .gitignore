@@ -67,3 +67,10 @@ packages/**/code/jars/
 # Backup files
 *.backup
 *.old
+
+# SonarQube
+.scannerwork/
+.sonar/
+sonar-scanner/
+sonar-scanner.zip
+.sonarqube/
