@@ -1,5 +1,0 @@
-%value AIACommonUtilities.docs:NotificationEvent/externalId% cannot be processed
-
-ReasonCode: %value AIACommonUtilities.docs:NotificationEvent/errorCode%
-
-Reason: %value AIACommonUtilities.docs:NotificationEvent/errorDesc% 
