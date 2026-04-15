@@ -230,7 +230,7 @@ jobs:
         run: |
           $scannerPath = "./sonar-scanner/bin/sonar-scanner.bat"
           
-          # Base parameters
+          # Community Edition compatible parameters (no branch analysis)
           $params = @(
             "-Dsonar.projectKey=${{ env.PROJECT_NAME }}",
             "-Dsonar.projectName=${{ env.PROJECT_NAME }}",
@@ -238,23 +238,13 @@ jobs:
             "-Dsonar.tests=tests",
             "-Dsonar.host.url=$env:SONAR_HOST_URL",
             "-Dsonar.token=$env:SONAR_TOKEN",
-            "-Dsonar.scm.provider=git"
+            "-Dsonar.scm.provider=git",
+            "-Dsonar.projectVersion=${{ github.run_number }}"
           )
           
-          # Add PR-specific parameters if this is a pull request
-          if ("${{ github.event_name }}" -eq "pull_request") {
-            $params += "-Dsonar.pullrequest.key=${{ github.event.pull_request.number }}"
-            $params += "-Dsonar.pullrequest.branch=${{ github.head_ref }}"
-            $params += "-Dsonar.pullrequest.base=${{ github.base_ref }}"
-            $params += "-Dsonar.pullrequest.github.repository=${{ github.repository }}"
-          }
-          else {
-            # Branch analysis for push events
-            $params += "-Dsonar.branch.name=${{ github.ref_name }}"
-          }
-          
-          Write-Host "Running SonarQube analysis..."
+          Write-Host "Running SonarQube analysis (Community Edition mode)..."
           Write-Host "Parameters: $($params -join ' ')"
+          Write-Host "Note: Branch analysis requires Developer Edition or higher"
           
           & $scannerPath $params
           
