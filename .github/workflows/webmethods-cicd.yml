@@ -253,29 +253,81 @@ jobs:
             exit $LASTEXITCODE
           }
       
-      - name: Wait for Quality Gate
-        uses: sonarsource/sonarqube-quality-gate-action@master
-        timeout-minutes: 5
+      - name: Check Quality Gate Status
+        shell: powershell
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-        id: quality-gate
-      
-      - name: Quality Gate Status
-        shell: powershell
         run: |
-          $status = "${{ steps.quality-gate.outputs.quality-gate-status }}"
+          Write-Host "Checking Quality Gate status from SonarQube..."
           
-          if ($status -eq "PASSED") {
-            Write-Host "✅ Quality Gate PASSED - Proceeding to DEV deployment"
-            "### ✅ SonarQube Quality Gate: PASSED" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
-            "Code quality check passed. Deployment to DEV will proceed." | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          # Read the report task file
+          $reportTask = Get-Content ".scannerwork/report-task.txt" | ConvertFrom-StringData
+          $ceTaskUrl = $reportTask.ceTaskUrl
+          
+          Write-Host "CE Task URL: $ceTaskUrl"
+          
+          # Wait for analysis to complete and get quality gate status
+          $maxAttempts = 60
+          $attempt = 0
+          $analysisComplete = $false
+          
+          while (-not $analysisComplete -and $attempt -lt $maxAttempts) {
+            $attempt++
+            Write-Host "Attempt $attempt/$maxAttempts - Checking analysis status..."
+            
+            try {
+              $headers = @{
+                "Authorization" = "Bearer $env:SONAR_TOKEN"
+              }
+              
+              $taskResponse = Invoke-RestMethod -Uri $ceTaskUrl -Headers $headers -Method Get
+              $taskStatus = $taskResponse.task.status
+              
+              Write-Host "Task status: $taskStatus"
+              
+              if ($taskStatus -eq "SUCCESS") {
+                $analysisComplete = $true
+                $analysisId = $taskResponse.task.analysisId
+                
+                # Get quality gate status
+                $qgUrl = "$env:SONAR_HOST_URL/api/qualitygates/project_status?analysisId=$analysisId"
+                $qgResponse = Invoke-RestMethod -Uri $qgUrl -Headers $headers -Method Get
+                $qgStatus = $qgResponse.projectStatus.status
+                
+                Write-Host "Quality Gate Status: $qgStatus"
+                
+                if ($qgStatus -eq "OK") {
+                  Write-Host "✅ Quality Gate PASSED - Proceeding to DEV deployment"
+                  "### ✅ SonarQube Quality Gate: PASSED" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+                  "Code quality check passed. Deployment to DEV will proceed." | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+                  "View details: $env:SONAR_HOST_URL/dashboard?id=${{ env.PROJECT_NAME }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+                  exit 0
+                }
+                else {
+                  Write-Host "❌ Quality Gate FAILED - Blocking DEV deployment"
+                  "### ❌ SonarQube Quality Gate: FAILED" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+                  "Code quality issues detected. Deployment to DEV is blocked." | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+                  "Please review and fix the issues in SonarQube dashboard before deploying." | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+                  "View details: $env:SONAR_HOST_URL/dashboard?id=${{ env.PROJECT_NAME }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+                  exit 1
+                }
+              }
+              elseif ($taskStatus -eq "FAILED" -or $taskStatus -eq "CANCELED") {
+                Write-Error "Analysis task failed with status: $taskStatus"
+                exit 1
+              }
+              
+              Start-Sleep -Seconds 5
+            }
+            catch {
+              Write-Host "Error checking status: $_"
+              Start-Sleep -Seconds 5
+            }
           }
-          elseif ($status -eq "FAILED") {
-            Write-Host "❌ Quality Gate FAILED - Blocking DEV deployment"
-            "### ❌ SonarQube Quality Gate: FAILED" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
-            "Code quality issues detected. Deployment to DEV is blocked." | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
-            "Please review and fix the issues in SonarQube dashboard before deploying." | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          
+          if (-not $analysisComplete) {
+            Write-Error "Timeout waiting for analysis to complete"
             exit 1
           }
           else {
