@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Values version="2.0">
+  <value name="enabled">yes</value>
+  <value name="system_package">no</value>
+  <value name="version">1.0</value>
+  <record name="startup_services" javaclass="com.wm.util.Values">
+    <null name="AIACommonLogger.services.acl:setACLs"/>
+    <null name="AIACommonLogger.services.configuration:initializeConfig"/>
+    <null name="AIACommonLogger.services.processThread:startupThreadPoolSrv"/>
+    <null name="AIACommonLogger.services.logging:reloadConfig"/>
+  </record>
+  <record name="shutdown_services" javaclass="com.wm.util.Values">
+    <null name="AIACommonLogger.services.processThread:shutdownThreadPool"/>
+  </record>
+  <null name="replication_services"/>
+  <null name="requires"/>
+  <value name="listACL">Default</value>
+  <value name="webappLoad">yes</value>
+  <value name="name">AIACommonLogger</value>
+  <value name="build"></value>
+  <value name="description"></value>
+  <value name="time">2020-02-18 17:29:43 HKT</value>
+  <value name="jvm_version">1.8.0_181</value>
+  <value name="publisher">AVEQXULPRY030.aia.biz</value>
+  <value name="patch_nums"></value>
+  <value name="classloader">package</value>
+</Values>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Values version="2.0">
+  <value name="name">flattenDocFields</value>
+  <value name="encodeutf8">true</value>
+  <value name="body">SURhdGFDdXJzb3IgcGMgPSBwaXBlbGluZS5nZXRDdXJzb3IoKTsNCklEYXRhIGRvYyA9IElEYXRh
+VXRpbC5nZXRJRGF0YShwYywgImRvYyIpOw0KU3RyaW5nQnVmZmVyIGJ1ZmZlciA9IG5ldyBTdHJp
+bmdCdWZmZXIoKTsNCmlmIChkb2MgIT0gbnVsbCl7DQoJDQoJSURhdGFDdXJzb3IgZGMgPSBkb2Mu
+Z2V0Q3Vyc29yKCk7DQoJd2hpbGUgKGRjLm5leHQoKSkNCgl7DQoJCVN0cmluZyBrZXkgICAgPSBk
+Yy5nZXRLZXkoKTsNCgkJU3RyaW5nIHZhbHVlID0gKFN0cmluZylkYy5nZXRWYWx1ZSgpOw0KCQli
+dWZmZXIuYXBwZW5kKGtleSkuYXBwZW5kKCI6IikuYXBwZW5kKHZhbHVlKS5hcHBlbmQoIiAiKTsN
+Cgl9DQoJZGMuZGVzdHJveSgpOw0KfQ0KSURhdGFVdGlsLnB1dChwYywgIm91dHB1dCIsIGJ1ZmZl
+ci50b1N0cmluZygpKTsNCgkNCglwYy5kZXN0cm95KCk7DQoJ</value>
+</Values>

@@ -1,0 +1,11 @@
+%value AIACommonUtilities.docs:NotificationEvent/externalId% processed with errors
+
+Total count of successful records: %value AIACommonUtilities.docs:NotificationEvent/businessData/successCount% 
+
+Total Amount of successful records: %value AIACommonUtilities.docs:NotificationEvent/businessData/retailSumCompleted%
+
+Total Count of unsuccessful records: %value AIACommonUtilities.docs:NotificationEvent/businessData/failureCount%
+
+Total Amount of unsuccessful records: %value AIACommonUtilities.docs:NotificationEvent/businessData/retailSumFailed%
+
+Failed Transactions: %value AIACommonUtilities.docs:NotificationEvent/businessData/failureTransactions% 

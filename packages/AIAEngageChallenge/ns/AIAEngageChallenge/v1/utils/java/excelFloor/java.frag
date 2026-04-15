@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Values version="2.0">
+  <value name="name">excelFloor</value>
+  <value name="encodeutf8">true</value>
+  <value name="body">SURhdGFDdXJzb3IgcGlwZWxpbmVDdXJzb3IgPSBwaXBlbGluZS5nZXRDdXJzb3IoKTsNCg0KZG91
+YmxlCW51bWJlciA9IERvdWJsZS5wYXJzZURvdWJsZShJRGF0YVV0aWwuZ2V0U3RyaW5nKCBwaXBl
+bGluZUN1cnNvciwgIm51bWJlciIgKSk7DQpkb3VibGUJc2lnbmlmaWNhbmNlID0gRG91YmxlLnBh
+cnNlRG91YmxlKElEYXRhVXRpbC5nZXRTdHJpbmcoIHBpcGVsaW5lQ3Vyc29yLCAic2lnbmlmaWNh
+bmNlIiApKTsNCg0KaWYoc2lnbmlmaWNhbmNlPT0wKXNpZ25pZmljYW5jZT0xOw0KDQpkb3VibGUg
+eCA9IChkb3VibGUpbnVtYmVyL3NpZ25pZmljYW5jZTsNCmludCB4aW50ID0gKGludCl4Ow0KaW50
+IHNpZyA9IChpbnQpc2lnbmlmaWNhbmNlOw0KDQp4aW50ID0geGludCAqIHNpZzsNCg0KSURhdGFD
+dXJzb3IgcGlwZWxpbmVDdXJzb3IxID0gcGlwZWxpbmUuZ2V0Q3Vyc29yKCk7DQpJRGF0YVV0aWwu
+cHV0KCBwaXBlbGluZUN1cnNvcjEsICJmbG9vclZhbCIsIFN0cmluZy52YWx1ZU9mKHhpbnQpKTsN
+CnBpcGVsaW5lQ3Vyc29yLmRlc3Ryb3koKTs=</value>
+</Values>

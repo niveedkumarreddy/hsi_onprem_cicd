@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Values version="2.0">
+  <value name="name">ping</value>
+  <value name="encodeutf8">true</value>
+  <value name="body">Ly8gcGlwZWxpbmUNCklEYXRhQ3Vyc29yIHBpcGVsaW5lQ3Vyc29yID0gcGlwZWxpbmUuZ2V0Q3Vy
+c29yKCk7DQoJU3RyaW5nCWlwID0gSURhdGFVdGlsLmdldFN0cmluZyggcGlwZWxpbmVDdXJzb3Is
+ICJpcCIgKTsNCnBpcGVsaW5lQ3Vyc29yLmRlc3Ryb3koKTsNCg0KLy8gcGlwZWxpbmUNCklEYXRh
+Q3Vyc29yIHBpcGVsaW5lQ3Vyc29yXzEgPSBwaXBlbGluZS5nZXRDdXJzb3IoKTsNCg0KDQpJbmV0
+QWRkcmVzcyBpbmV0Ow0KdHJ5IHsNCglpbmV0ID0gSW5ldEFkZHJlc3MuZ2V0QnlOYW1lKGlwKTsN
+CglpZiAoaW5ldC5pc1JlYWNoYWJsZSg1MDAwKSkgDQoJCUlEYXRhVXRpbC5wdXQoIHBpcGVsaW5l
+Q3Vyc29yXzEsICJyZXN1bHQiLCAic3VjY2VzcyIgKTsgDQoJZWxzZQ0KCQlJRGF0YVV0aWwucHV0
+KCBwaXBlbGluZUN1cnNvcl8xLCAicmVzdWx0IiwgImZhaWxlZCIgKTsNCn0gY2F0Y2ggKElPRXhj
+ZXB0aW9uIGUpIHsNCglJRGF0YVV0aWwucHV0KCBwaXBlbGluZUN1cnNvcl8xLCAicmVzdWx0Iiwg
+ImVycm9yIitlLmdldENhdXNlKCkgKTsNCn0gDQoNCg0KDQpwaXBlbGluZUN1cnNvcl8xLmRlc3Ry
+b3koKTs=</value>
+</Values>

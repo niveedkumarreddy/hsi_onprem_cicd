@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Values version="2.0">
+  <value name="node_type">interface</value>
+  <value name="node_subtype">unknown</value>
+  <value name="node_nsName">AIACommonUtilities.security.java</value>
+  <value name="is_public">false</value>
+  <value name="shared">cHJpdmF0ZSBzdGF0aWMgU3RyaW5nIGdldFNhbHQoKXsKICAgIFNlY3VyZVJhbmRvbSByYW5kb20g
+PSBuZXcgU2VjdXJlUmFuZG9tKCk7CiAgICBieXRlIGJ5dGVzW10gPSBuZXcgYnl0ZVszMl07CiAg
+ICByYW5kb20ubmV4dEJ5dGVzKGJ5dGVzKTsKICAgIFN0cmluZyBzYWx0ID0gbmV3IFN0cmluZyhi
+eXRlcyk7CiAgICByZXR1cm4gc2FsdDsKfQoKcHJpdmF0ZSBzdGF0aWMgSXZQYXJhbWV0ZXJTcGVj
+IGdldElWU3BlYygpCnsKCWJ5dGVbXSBpdiA9IHsgMCwgMCwgMCwgMCwgMCwgMCwgMCwgMCwgMCwg
+MCwgMCwgMCwgMCwgMCwgMCwgMCB9OwogICAgSXZQYXJhbWV0ZXJTcGVjIGl2c3BlYyA9IG5ldyBJ
+dlBhcmFtZXRlclNwZWMoaXYpOwoJcmV0dXJuIGl2c3BlYzsKCn0KCnByaXZhdGUgc3RhdGljIFNl
+Y3JldEtleVNwZWMgZ2V0U2VjcmV0S2V5U3BlYyhTdHJpbmcgc2VjcmV0S2V5LCBTdHJpbmcgc2Fs
+dCkgdGhyb3dzIFVuc3VwcG9ydGVkRW5jb2RpbmdFeGNlcHRpb24sIE5vU3VjaEFsZ29yaXRobUV4
+Y2VwdGlvbiwgSW52YWxpZEtleVNwZWNFeGNlcHRpb24KewoJCglieXRlW10gc2FsdEJ5dGVzID0g
+c2FsdC5nZXRCeXRlcygiVVRGLTgiKTsKCQoJU2VjcmV0S2V5RmFjdG9yeSBza2ZhY3RvcnkgPSBT
+ZWNyZXRLZXlGYWN0b3J5LmdldEluc3RhbmNlKCJQQktERjJXaXRoSG1hY1NIQTI1NiIpOwoJUEJF
+S2V5U3BlYyBzcGVjID0gbmV3IFBCRUtleVNwZWMoc2VjcmV0S2V5LnRvQ2hhckFycmF5KCksIHNh
+bHRCeXRlcywgNjU1MzYsIDI1Nik7CglTZWNyZXRLZXkgc2VjcmV0S2V5T2JqID0gc2tmYWN0b3J5
+LmdlbmVyYXRlU2VjcmV0KHNwZWMpOwoJU2VjcmV0S2V5U3BlYyBza3NWYWwgPSBuZXcgU2VjcmV0
+S2V5U3BlYyhzZWNyZXRLZXlPYmouZ2V0RW5jb2RlZCgpLCAiQUVTIik7CglyZXR1cm4gc2tzVmFs
+Owp9</value>
+  <value name="encodeutf8">true</value>
+  <value name="extends"></value>
+  <array name="implements" type="value" depth="1">
+  </array>
+  <array name="imports" type="value" depth="1">
+    <value>java.io.UnsupportedEncodingException</value>
+    <value>java.security.NoSuchAlgorithmException</value>
+    <value>java.security.SecureRandom</value>
+    <value>java.security.spec.InvalidKeySpecException</value>
+    <value>javax.crypto.BadPaddingException</value>
+    <value>javax.crypto.Cipher</value>
+    <value>javax.crypto.IllegalBlockSizeException</value>
+    <value>javax.crypto.SecretKey</value>
+    <value>javax.crypto.SecretKeyFactory</value>
+    <value>javax.crypto.spec.IvParameterSpec</value>
+    <value>javax.crypto.spec.PBEKeySpec</value>
+    <value>javax.crypto.spec.SecretKeySpec</value>
+    <value>java.util.Arrays</value>
+    <value>java.util.Base64</value>
+    <value>java.util.List</value>
+  </array>
+</Values>

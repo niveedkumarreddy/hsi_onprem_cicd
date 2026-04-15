@@ -1,0 +1,37 @@
+<html>
+<head>
+<link rel="stylesheet" href="css/webMethods.css">
+<script src="lib/showdown.js"></script>
+<style>
+
+  html, body {
+    width: 99%;
+    height: 99%;
+    border: 0px;
+  }
+  
+  
+</style>
+</head>
+
+<body>
+
+<div id="readme"></div>
+<script type="text/javascript">
+var converter = new showdown.Converter();
+converter.setOption("tables", true);
+converter.setOption("tasklists", true);
+var xhr = new XMLHttpRequest();
+xhr.open('GET', 'README_demo.md');
+xhr.onload = function() {
+    var target = document.getElementById('readme');
+    if (xhr.status === 200) {
+        target.innerHTML = converter.makeHtml(xhr.responseText);
+    } else {
+        target.innerHTML = "No README.md found.<p>To document this package create a markdown-formatted file named README.md in this package's /pub folder"
+    }
+}
+xhr.send();
+</script>
+</body>
+</html>

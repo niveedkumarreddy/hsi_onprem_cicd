@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Values version="2.0">
+  <value name="name">roundUp</value>
+  <value name="encodeutf8">true</value>
+  <value name="body">SURhdGFDdXJzb3IgcGlwZWxpbmVDdXJzb3IgPSBwaXBlbGluZS5nZXRDdXJzb3IoKTsNCg0KZG91
+YmxlCWlucHV0ID0gRG91YmxlLnBhcnNlRG91YmxlKElEYXRhVXRpbC5nZXRTdHJpbmcoIHBpcGVs
+aW5lQ3Vyc29yLCAiaW5wdXQiICkpOw0KZG91YmxlCXJvdW5kVG8gPSBEb3VibGUucGFyc2VEb3Vi
+bGUoSURhdGFVdGlsLmdldFN0cmluZyggcGlwZWxpbmVDdXJzb3IsICJyb3VuZFRvIiApKTsNCg0K
+DQpkb3VibGUgeCA9IE1hdGgucm91bmQoKGRvdWJsZSlpbnB1dC9yb3VuZFRvKSpyb3VuZFRvOw0K
+aWYoeDxpbnB1dCl4PXgrcm91bmRUbzsNCmludCB4aW50ID0gKGludCl4Ow0KDQovLyBwaXBlbGlu
+ZQ0KSURhdGFDdXJzb3IgcGlwZWxpbmVDdXJzb3IxID0gcGlwZWxpbmUuZ2V0Q3Vyc29yKCk7DQpJ
+RGF0YVV0aWwucHV0KCBwaXBlbGluZUN1cnNvcjEsICJvdXRwdXQiLCBTdHJpbmcudmFsdWVPZih4
+aW50KSk7DQpwaXBlbGluZUN1cnNvci5kZXN0cm95KCk7DQoJ</value>
+</Values>
