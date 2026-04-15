@@ -267,6 +267,12 @@ jobs:
           
           Write-Host "CE Task URL: $ceTaskUrl"
           
+          # SonarQube uses Basic Auth: token as username, empty password
+          $base64Token = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${env:SONAR_TOKEN}:"))
+          $headers = @{
+            "Authorization" = "Basic $base64Token"
+          }
+          
           # Wait for analysis to complete and get quality gate status
           $maxAttempts = 60
           $attempt = 0
@@ -277,10 +283,6 @@ jobs:
             Write-Host "Attempt $attempt/$maxAttempts - Checking analysis status..."
             
             try {
-              $headers = @{
-                "Authorization" = "Bearer $env:SONAR_TOKEN"
-              }
-              
               $taskResponse = Invoke-RestMethod -Uri $ceTaskUrl -Headers $headers -Method Get
               $taskStatus = $taskResponse.task.status
               
@@ -322,6 +324,7 @@ jobs:
             }
             catch {
               Write-Host "Error checking status: $_"
+              Write-Host "Error details: $($_.Exception.Message)"
               Start-Sleep -Seconds 5
             }
           }
@@ -329,10 +332,6 @@ jobs:
           if (-not $analysisComplete) {
             Write-Error "Timeout waiting for analysis to complete"
             exit 1
-          }
-          else {
-            Write-Host "⚠️ Quality Gate status: $status"
-            "### ⚠️ SonarQube Quality Gate: $status" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
           }
           
           "View full report: ${{ secrets.SONAR_HOST_URL }}/dashboard?id=${{ env.PROJECT_NAME }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
