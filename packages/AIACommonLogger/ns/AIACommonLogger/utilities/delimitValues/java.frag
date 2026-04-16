@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Values version="2.0">
+  <value name="name">delimitValues</value>
+  <value name="encodeutf8">true</value>
+  <value name="body">SURhdGFDdXJzb3IgcGMgPSBwaXBlbGluZS5nZXRDdXJzb3IoKTsNCklEYXRhIGRvYyA9IElEYXRh
+VXRpbC5nZXRJRGF0YShwYywgImRvYyIpOw0KU3RyaW5nIGRlbGltaXRlciA9IElEYXRhVXRpbC5n
+ZXRTdHJpbmcocGMsImRlbGltaXRlciIpOw0KU3RyaW5nQnVmZmVyIGJ1ZmZlciA9IG5ldyBTdHJp
+bmdCdWZmZXIoKTsNCmlmIChkb2MgIT0gbnVsbCl7DQoJLy9waXBlbGluZSBkZXRhaWxzIG5hbWUN
+CglJRGF0YUN1cnNvciBkYyA9IGRvYy5nZXRDdXJzb3IoKTsNCgl3aGlsZSAoZGMubmV4dCgpKXsN
+CgkJDQoJCVN0cmluZyB2YWx1ZSA9IChTdHJpbmcpZGMuZ2V0VmFsdWUoKTsNCgkJaWYodmFsdWUu
+aXNFbXB0eSgpKXsNCgkJCXZhbHVlID0iTkEiOw0KCQl9DQoJCWJ1ZmZlci5hcHBlbmQodmFsdWUp
+LmFwcGVuZChkZWxpbWl0ZXIpOw0KCX0NCglkYy5kZXN0cm95KCk7DQp9DQpJRGF0YVV0aWwucHV0
+KHBjLCAib3V0cHV0IiwgYnVmZmVyLnRvU3RyaW5nKCkpOw0KCS8vIHBpcGVsaW5lDQoJcGMuZGVz
+dHJveSgpOw0KCQ==</value>
+</Values>

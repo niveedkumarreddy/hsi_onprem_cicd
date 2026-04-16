@@ -1,0 +1,307 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<loggingConfigurations>
+<!-- Values for isPayloadNeeded - Always,OnException and Off -->
+<Application name="MPV">
+    <Region name="Singapore" Id="6">
+		<Function name="MyPageVitalityCore">
+			<LoggerName>AIALogging-MPV-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+		<Function name="MyPageVitalityBRE">
+			<LoggerName>AIALogging-MPV-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+		<Function name="Default">
+			<LoggerName>AIALogging-MPV-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+	</Region>
+	<Region name="Australia" Id="7">
+		<Function name="MyPageVitalityCore">
+			<LoggerName>AIALogging-MPV-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+		<Function name="MyPageVitalityBRE">
+			<LoggerName>AIALogging-MPV-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+		<Function name="Default">
+			<LoggerName>AIALogging-MPV-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+	</Region>
+	<Region name="Philippines" Id="8">
+		<Function name="MyPageVitalityCore">
+			<LoggerName>AIALogging-MPV-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+		<Function name="MyPageVitalityBRE">
+			<LoggerName>AIALogging-MPV-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+		<Function name="Default">
+			<LoggerName>AIALogging-MPV-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+	</Region>
+	<Region name="Malaysia" Id="9">
+		<Function name="MyPageVitalityCore">
+			<LoggerName>AIALogging-MPV-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+		<Function name="MyPageVitalityBRE">
+			<LoggerName>AIALogging-MPV-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+		<Function name="Default">
+			<LoggerName>AIALogging-MPV-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+	</Region>
+	<Region name="Thailand" Id="10">
+		<Function name="MyPageVitalityCore">
+			<LoggerName>AIALogging-MPV-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+		<Function name="MyPageVitalityBRE">
+			<LoggerName>AIALogging-MPV-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+		<Function name="Default">
+			<LoggerName>AIALogging-MPV-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+	</Region>	
+	<Region name="Hong Kong" Id="11">
+		<Function name="MyPageVitalityCore">
+			<LoggerName>AIALogging-MPV-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+		<Function name="MyPageVitalityBRE">
+			<LoggerName>AIALogging-MPV-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+		<Function name="Default">
+			<LoggerName>AIALogging-MPV-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+	</Region>
+	<Region name="Indonesia" Id="13">
+		<Function name="MyPageVitalityCore">
+			<LoggerName>AIALogging-MPV-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+		<Function name="MyPageVitalityBRE">
+			<LoggerName>AIALogging-MPV-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+		<Function name="Default">
+			<LoggerName>AIALogging-MPV-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+	</Region>
+	<Region name="New Zealand" Id="15">
+		<Function name="MyPageVitalityCore">
+			<LoggerName>AIALogging-MPV-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+		<Function name="MyPageVitalityBRE">
+			<LoggerName>AIALogging-MPV-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+		<Function name="Default">
+			<LoggerName>AIALogging-MPV-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+	</Region> 
+	<Region name="Default" Id="999">
+		<Function name="MyPageVitalityCore">
+			<LoggerName>AIALogging-MPV-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+		<Function name="MyPageVitalityBRE">
+			<LoggerName>AIALogging-MPV-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+		<Function name="Default">
+			<LoggerName>AIALogging-MPV-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+	</Region>
+</Application>
+<Application name="VE">
+    <Region name="Singapore" Id="6">
+		<Function name="Default">
+			<LoggerName>AIALogging-VE-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+	</Region>
+	<Region name="Australia" Id="7">
+		<Function name="Default">
+			<LoggerName>AIALogging-VE-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+	</Region>
+	<Region name="Philippines" Id="8">
+		<Function name="Default">
+			<LoggerName>AIALogging-VE-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+	</Region>
+	<Region name="Malaysia" Id="9">
+		<Function name="Default">
+			<LoggerName>AIALogging-VE-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+	</Region>
+	<Region name="Thailand" Id="10">
+		<Function name="Default">
+			<LoggerName>AIALogging-VE-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+	</Region>	
+	<Region name="Hong Kong" Id="11">
+		<Function name="Default">
+			<LoggerName>AIALogging-VE-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+	</Region>
+	<Region name="Indonesia" Id="13">
+		<Function name="Default">
+			<LoggerName>AIALogging-VE-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+	</Region>
+	<Region name="New Zealand" Id="15">
+		<Function name="Default">
+			<LoggerName>AIALogging-VE-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+	</Region> 
+	<Region name="Default" Id="999">
+		<Function name="Default">
+			<LoggerName>AIALogging-VE-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+	</Region>
+</Application>
+<Application name="VPF">
+    <Region name="Singapore" Id="6">
+		<Function name="Default">
+			<LoggerName>AIALogging-VPF-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+	</Region>
+	<Region name="Australia" Id="7">
+		<Function name="Default">
+			<LoggerName>AIALogging-VPF-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+	</Region>
+	<Region name="Philippines" Id="8">
+		<Function name="Default">
+			<LoggerName>AIALogging-VPF-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+	</Region>
+	<Region name="Malaysia" Id="9">
+		<Function name="Default">
+			<LoggerName>AIALogging-VPF-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>Off</isPayloadNeeded>
+		</Function>
+	</Region>
+	<Region name="Thailand" Id="10">
+		<Function name="Default">
+			<LoggerName>AIALogging-VPF-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+	</Region>	
+	<Region name="Hong Kong" Id="11">
+		<Function name="Default">
+			<LoggerName>AIALogging-VPF-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+	</Region>
+	<Region name="Indonesia" Id="13">
+		<Function name="Default">
+			<LoggerName>AIALogging-VPF-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+	</Region>
+	<Region name="New Zealand" Id="15">
+		<Function name="Default">
+			<LoggerName>AIALogging-VPF-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+	</Region> 
+	<Region name="Default" Id="999">
+		<Function name="Default">
+			<LoggerName>AIALogging-VPF-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+	</Region>
+</Application>
+<Application name="Error">
+	<Region name="Default" Id="999">
+		<Function name="Default">
+			<LoggerName>AIALogging-Error-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>Always</isPayloadNeeded>
+		</Function>
+	</Region>
+</Application>
+<Application name="Default">
+	<Region name="Default" Id="999">
+		<Function name="Default">
+			<LoggerName>AIALogging-Common-Logger</LoggerName>
+			<Delimiter>;;</Delimiter>
+			<isPayloadNeeded>OnException</isPayloadNeeded>
+		</Function>
+	</Region>
+</Application>
+</loggingConfigurations>

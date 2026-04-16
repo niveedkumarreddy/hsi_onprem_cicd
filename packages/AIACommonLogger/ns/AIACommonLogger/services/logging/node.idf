@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Values version="2.0">
+  <value name="node_type">interface</value>
+  <value name="node_subtype">unknown</value>
+  <value name="node_nsName">AIACommonLogger.services.logging</value>
+  <value name="is_public">false</value>
+  <value name="shared">c3RhdGljIHsJCiAgICBTeXN0ZW0uc2V0UHJvcGVydHkoImxvZzRqMi5jb250ZXh0U2VsZWN0b3Ii
+LAogICAgICAgICJvcmcuYXBhY2hlLmxvZ2dpbmcubG9nNGouY29yZS5hc3luYy5Bc3luY0xvZ2dl
+ckNvbnRleHRTZWxlY3RvciIpOwp9IAoKcHJvdGVjdGVkIHN0YXRpYyBMb2dnZXJDb250ZXh0IGNv
+bnRleHQ9IENvbmZpZ3VyYXRvci5pbml0aWFsaXplKCJsb2c0ajIiLCBudWxsLCAicGFja2FnZXMv
+QUlBQ29tbW9uTG9nZ2VyL2NvbmZpZy9sb2c0ajIueG1sIik7Cgk=</value>
+  <value name="encodeutf8">true</value>
+  <value name="extends"></value>
+  <array name="implements" type="value" depth="1">
+  </array>
+  <array name="imports" type="value" depth="1">
+    <value>java.io.File</value>
+    <value>java.io.FileInputStream</value>
+    <value>java.io.IOException</value>
+    <value>org.apache.logging.log4j.LogManager</value>
+    <value>org.apache.logging.log4j.Logger</value>
+    <value>org.apache.logging.log4j.core.LoggerContext</value>
+    <value>org.apache.logging.log4j.core.config.ConfigurationSource</value>
+    <value>org.apache.logging.log4j.core.config.Configurator</value>
+    <value>com.softwareag.util.IDataMap</value>
+  </array>
+</Values>

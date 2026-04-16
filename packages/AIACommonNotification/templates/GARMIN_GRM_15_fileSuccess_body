@@ -1,0 +1,3 @@
+%value AIACommonUtilities.docs:NotificationEvent/externalId% processed successfully 
+Total Count of records: %value AIACommonUtilities.docs:NotificationEvent/businessData/successCount% 
+Total Amount: %value AIACommonUtilities.docs:NotificationEvent/businessData/retailSumCompleted% 
