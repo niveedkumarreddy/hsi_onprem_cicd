@@ -13,9 +13,9 @@ on:
   workflow_dispatch:
 
 env:
-  SAG_HOME: C:/IBM/webMethods
-  JAVA_HOME: C:/IBM/webMethods/jvm/jvm
-  PROJECT_NAME: hsi_onprem_cicd
+  SAG_HOME: ${{ vars.SAG_HOME }}
+  JAVA_HOME: ${{ vars.JAVA_HOME }}
+  PROJECT_NAME: ${{ vars.PROJECT_NAME }}
 
 jobs:
   sonarqube-analysis:
@@ -74,8 +74,8 @@ jobs:
           $params = @(
             "-Dsonar.projectKey=${{ env.PROJECT_NAME }}",
             "-Dsonar.projectName=${{ env.PROJECT_NAME }}",
-            "-Dsonar.sources=packages,cicd,deployer",
-            "-Dsonar.tests=tests",
+            "-Dsonar.sources=application/packages,framework/cicd,framework/deployer",
+            "-Dsonar.tests=application/tests",
             "-Dsonar.host.url=$env:SONAR_HOST_URL",
             "-Dsonar.token=$env:SONAR_TOKEN",
             "-Dsonar.scm.provider=git",

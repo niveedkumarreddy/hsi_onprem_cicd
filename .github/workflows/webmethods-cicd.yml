@@ -4,9 +4,10 @@ on:
   push:
     branches: [main]
     paths:
-      - 'packages/**'
-      - 'tests/**'
-      - 'environments/**'
+      - 'application/packages/**'
+      - 'application/tests/**'
+      - 'framework/cicd/**'
+      - 'framework/deployer/**'
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -26,10 +27,10 @@ on:
         default: false
 
 env:
-  SAG_HOME: C:/IBM/webMethods
-  CICD_HOME: ${{ github.workspace }}/cicd
-  JAVA_HOME: C:/IBM/webMethods/jvm/jvm
-  PROJECT_NAME: hsi_onprem_cicd
+  SAG_HOME: ${{ vars.SAG_HOME }}
+  CICD_HOME: ${{ github.workspace }}/framework/cicd
+  JAVA_HOME: ${{ vars.JAVA_HOME }}
+  PROJECT_NAME: ${{ vars.PROJECT_NAME }}
 
 jobs:
   build:
@@ -85,8 +86,8 @@ jobs:
           bda.buildNumber=${{ github.run_number }}
           
           # Source Locations
-          isPackagesDir=$WORKSPACE/packages
-          isTestDir=$WORKSPACE/tests
+          isPackagesDir=$WORKSPACE/application/packages
+          isTestDir=$WORKSPACE/application/tests
           
           # Build Output
           config.tmpdir=$WORKSPACE/tmp
@@ -231,8 +232,8 @@ jobs:
           $params = @(
             "-Dsonar.projectKey=${{ env.PROJECT_NAME }}",
             "-Dsonar.projectName=${{ env.PROJECT_NAME }}",
-            "-Dsonar.sources=packages,cicd,deployer",
-            "-Dsonar.tests=tests",
+            "-Dsonar.sources=application/packages,framework/cicd,framework/deployer",
+            "-Dsonar.tests=application/tests",
             "-Dsonar.host.url=$env:SONAR_HOST_URL",
             "-Dsonar.token=$env:SONAR_TOKEN",
             "-Dsonar.scm.provider=git",
@@ -420,7 +421,7 @@ jobs:
           
           # Variable Substitution
           config.deployer.doVarSub=true
-          varsubDir=${{ github.workspace }}/varsub
+          varsubDir=${{ github.workspace }}/application/varsub
           config.deployer.splitDeploymentSets=false
           
           # Temp Directory
@@ -560,7 +561,7 @@ jobs:
           
           # Variable Substitution
           config.deployer.doVarSub=true
-          varsubDir=$WORKSPACE/varsub
+          varsubDir=$WORKSPACE/application/varsub
           config.deployer.splitDeploymentSets=false
           
           # Temp Directory

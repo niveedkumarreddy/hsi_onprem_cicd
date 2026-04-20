@@ -20,10 +20,10 @@ on:
         type: string
 
 env:
-  SAG_HOME: C:/SoftwareAG
-  CICD_HOME: ${{ github.workspace }}/cicd
-  JAVA_HOME: C:/SoftwareAG/jvm/jvm
-  PROJECT_NAME: hsi_onprem_cicd
+  SAG_HOME: ${{ vars.SAG_HOME }}
+  CICD_HOME: ${{ github.workspace }}/framework/cicd
+  JAVA_HOME: ${{ vars.JAVA_HOME }}
+  PROJECT_NAME: ${{ vars.PROJECT_NAME }}
 
 jobs:
   validate-rollback:
@@ -236,7 +236,7 @@ jobs:
           
           # Variable Substitution
           config.deployer.doVarSub=true
-          varsubDir=${{ github.workspace }}/varsub
+          varsubDir=${{ github.workspace }}/application/varsub
           config.deployer.splitDeploymentSets=false
           
           # Temp Directory
