@@ -1,0 +1,53 @@
+# webMethods CI/CD Framework - Git Ignore
+
+# Build Output
+build/
+output/
+*.zip
+*.acdl
+
+# Deployer Logs
+deployer/logs/
+deployer/*.log
+deployer/config.cnf
+deployer/Deployment_*.xml
+deployer/projectAutomatorReport.xml
+
+# Test Results
+tests/results/
+*.junit.xml
+
+# Temporary Files
+*.tmp
+*.temp
+*.bak
+*.swp
+*~
+
+# IDE Files
+.vscode/
+.idea/
+*.iml
+.project
+.classpath
+.settings/
+
+# OS Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ANT
+.ant-targets-build.xml
+
+# Logs
+*.log
+logs/
+
+# Environment-specific (should be in application repo)
+custom.properties
+varsub/
+
+# Backup Files
+*.orig
+*.backup

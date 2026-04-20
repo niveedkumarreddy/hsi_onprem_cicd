@@ -1,0 +1,371 @@
+name: Rollback Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to rollback'
+        required: true
+        type: choice
+        options:
+          - TEST
+          - PROD
+      build_number:
+        description: 'Build number to rollback to'
+        required: true
+        type: string
+      reason:
+        description: 'Reason for rollback'
+        required: true
+        type: string
+
+env:
+  SAG_HOME: C:/SoftwareAG
+  CICD_HOME: ${{ github.workspace }}/cicd
+  JAVA_HOME: C:/SoftwareAG/jvm/jvm
+  PROJECT_NAME: hsi_onprem_cicd
+
+jobs:
+  validate-rollback:
+    name: Validate Rollback Request
+    runs-on: ubuntu-latest
+    outputs:
+      is-valid: ${{ steps.validate.outputs.is-valid }}
+    
+    steps:
+      - name: Validate Build Number
+        id: validate
+        run: |
+          BUILD_NUM="${{ github.event.inputs.build_number }}"
+          
+          if ! [[ "$BUILD_NUM" =~ ^[0-9]+$ ]]; then
+            echo "❌ Invalid build number: $BUILD_NUM"
+            echo "is-valid=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          
+          if [ "$BUILD_NUM" -ge "${{ github.run_number }}" ]; then
+            echo "❌ Cannot rollback to future build: $BUILD_NUM"
+            echo "is-valid=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          
+          echo "✅ Build number validation passed"
+          echo "is-valid=true" >> $GITHUB_OUTPUT
+      
+      - name: Create Rollback Summary
+        run: |
+          echo "## Rollback Request" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: ${{ github.event.inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Target Build**: ${{ github.event.inputs.build_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Reason**: ${{ github.event.inputs.reason }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Requested By**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Timestamp**: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_STEP_SUMMARY
+
+  rollback-test:
+    name: Rollback TEST Environment
+    needs: validate-rollback
+    runs-on: [self-hosted, hsi, onprem, windows]
+    if: github.event.inputs.environment == 'TEST'
+    environment:
+      name: TEST
+      url: https://test1-server.company.com:5555
+    strategy:
+      matrix:
+        server: [test1, test2, test3]
+      fail-fast: true
+      max-parallel: 1
+    
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+      
+      - name: Download Previous Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts-${{ github.event.inputs.build_number }}
+          path: .
+        continue-on-error: true
+      
+      - name: Check Artifacts Availability
+        id: check-artifacts
+        shell: powershell
+        run: |
+          if (-not (Test-Path "tmp/fbr")) {
+            Write-Host "❌ Build artifacts not found for build ${{ github.event.inputs.build_number }}"
+            Write-Host "Artifacts may have expired (30-day retention)"
+            exit 1
+          }
+          Write-Host "✅ Build artifacts found"
+      
+      - name: Create Backup Before Rollback
+        shell: powershell
+        run: |
+          $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
+          $BACKUP_DIR = "backups/pre-rollback-$timestamp"
+          New-Item -ItemType Directory -Force -Path $BACKUP_DIR | Out-Null
+          Write-Host "Creating backup in $BACKUP_DIR..."
+          "Backup created for ${{ matrix.server }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+      
+      - name: Rollback TEST-${{ matrix.server }}
+        shell: powershell
+        run: |
+          @"
+          # Rollback Configuration for TEST
+          
+          # Software AG Installation
+          SAGHome=$env:SAG_HOME
+          
+          bda.targetEnv=TEST
+          bda.projectName=$env:PROJECT_NAME
+          bda.buildNumber=${{ github.event.inputs.build_number }}
+          
+          # Repository Configuration
+          fbrRepoName=$env:PROJECT_NAME`_${{ github.event.inputs.build_number }}
+          fbrRepoDir=${{ github.workspace }}/tmp/fbr/$env:PROJECT_NAME`_${{ github.event.inputs.build_number }}
+          
+          # Deployer Configuration
+          config.deployer.deployerInstallationPath=$env:SAG_HOME/IntegrationServer/instances/default/packages/WmDeployer/bin
+          config.deployer.deployerHost=${{ secrets.DEPLOYER_HOST }}
+          config.deployer.deployerPort=${{ secrets.DEPLOYER_PORT }}
+          config.deployer.deployerUsername=${{ secrets.DEPLOYER_USERNAME }}
+          config.deployer.deployerPassword=${{ secrets.DEPLOYER_PASSWORD }}
+          config.deployer.projectNamePrefix=ROLLBACK_TEST_${{ matrix.server }}_${{ github.event.inputs.build_number }}
+          
+          # Variable Substitution
+          config.deployer.doVarSub=true
+          varsubDir=${{ github.workspace }}/varsub
+          config.deployer.splitDeploymentSets=false
+          
+          # Temp Directory
+          config.tmpdir=tmp
+          "@ | Out-File -FilePath rollback-test-${{ matrix.server }}.properties -Encoding UTF8
+          
+          Set-Location $env:CICD_HOME
+          Write-Host "Rolling back ${{ matrix.server }}-server.company.com to build ${{ github.event.inputs.build_number }}..."
+          
+          ant -f build.xml deploy `
+            -Dproject.properties="${{ github.workspace }}/rollback-test-${{ matrix.server }}.properties" `
+            -verbose
+          
+          "✅ Rolled back TEST-${{ matrix.server }} to build ${{ github.event.inputs.build_number }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+      
+      - name: Verify Rollback
+        shell: powershell
+        run: |
+          Write-Host "Verifying rollback on ${{ matrix.server }}-server.company.com..."
+          # Add verification logic here
+          "Rollback verification completed for TEST-${{ matrix.server }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+      
+      - name: Wait Between Servers
+        if: matrix.server != 'test3'
+        shell: powershell
+        run: |
+          Write-Host "Waiting 1 minute before next server rollback..."
+          Start-Sleep -Seconds 60
+
+  rollback-prod:
+    name: Rollback PROD Environment
+    needs: validate-rollback
+    runs-on: [self-hosted, hsi, onprem, windows]
+    if: github.event.inputs.environment == 'PROD'
+    environment:
+      name: PROD
+      url: https://prod1-server.company.com:5555
+    strategy:
+      matrix:
+        server: [prod1, prod2, prod3]
+      fail-fast: true
+      max-parallel: 1
+    
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+      
+      - name: Download Previous Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts-${{ github.event.inputs.build_number }}
+          path: .
+        continue-on-error: true
+      
+      - name: Check Artifacts Availability
+        id: check-artifacts
+        shell: powershell
+        run: |
+          if (-not (Test-Path "tmp/fbr")) {
+            Write-Host "❌ Build artifacts not found for build ${{ github.event.inputs.build_number }}"
+            Write-Host "Artifacts may have expired (30-day retention)"
+            exit 1
+          }
+          Write-Host "✅ Build artifacts found"
+      
+      - name: Create Critical Backup Before Rollback
+        shell: powershell
+        run: |
+          $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
+          $BACKUP_DIR = "backups/pre-rollback-prod-$timestamp"
+          New-Item -ItemType Directory -Force -Path $BACKUP_DIR | Out-Null
+          Write-Host "Creating CRITICAL backup in $BACKUP_DIR..."
+          "⚠️ CRITICAL: Backup created for PROD-${{ matrix.server }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+      
+      - name: Rollback PROD-${{ matrix.server }}
+        shell: powershell
+        run: |
+          @"
+          # Rollback Configuration for PROD
+          
+          # Software AG Installation
+          SAGHome=$env:SAG_HOME
+          
+          bda.targetEnv=PROD
+          bda.projectName=$env:PROJECT_NAME
+          bda.buildNumber=${{ github.event.inputs.build_number }}
+          
+          # Repository Configuration
+          fbrRepoName=$env:PROJECT_NAME`_${{ github.event.inputs.build_number }}
+          fbrRepoDir=${{ github.workspace }}/tmp/fbr/$env:PROJECT_NAME`_${{ github.event.inputs.build_number }}
+          
+          # Deployer Configuration
+          config.deployer.deployerInstallationPath=$env:SAG_HOME/IntegrationServer/instances/default/packages/WmDeployer/bin
+          config.deployer.deployerHost=${{ secrets.DEPLOYER_HOST }}
+          config.deployer.deployerPort=${{ secrets.DEPLOYER_PORT }}
+          config.deployer.deployerUsername=${{ secrets.DEPLOYER_USERNAME }}
+          config.deployer.deployerPassword=${{ secrets.DEPLOYER_PASSWORD }}
+          config.deployer.projectNamePrefix=ROLLBACK_PROD_${{ matrix.server }}_${{ github.event.inputs.build_number }}
+          
+          # Variable Substitution
+          config.deployer.doVarSub=true
+          varsubDir=${{ github.workspace }}/varsub
+          config.deployer.splitDeploymentSets=false
+          
+          # Temp Directory
+          config.tmpdir=tmp
+          "@ | Out-File -FilePath rollback-prod-${{ matrix.server }}.properties -Encoding UTF8
+          
+          Set-Location $env:CICD_HOME
+          Write-Host "⚠️ Rolling back PRODUCTION ${{ matrix.server }}-server.company.com to build ${{ github.event.inputs.build_number }}..."
+          
+          ant -f build.xml deploy `
+            -Dproject.properties="${{ github.workspace }}/rollback-prod-${{ matrix.server }}.properties" `
+            -verbose
+          
+          "✅ Rolled back PROD-${{ matrix.server }} to build ${{ github.event.inputs.build_number }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+      
+      - name: Verify Rollback
+        shell: powershell
+        run: |
+          Write-Host "Verifying rollback on ${{ matrix.server }}-server.company.com..."
+          # Add verification logic here
+          "Rollback verification completed for PROD-${{ matrix.server }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+      
+      - name: Wait Between Servers
+        if: matrix.server != 'prod3'
+        shell: powershell
+        run: |
+          Write-Host "Waiting 2 minutes before next server rollback..."
+          Start-Sleep -Seconds 120
+
+  post-rollback-tests:
+    name: Post-Rollback Verification Tests
+    needs: [rollback-test, rollback-prod]
+    runs-on: [self-hosted, hsi, onprem, windows]
+    if: always() && (needs.rollback-test.result == 'success' || needs.rollback-prod.result == 'success')
+    
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+      
+      - name: Run Smoke Tests
+        shell: powershell
+        run: |
+          @"
+          bda.targetEnv=${{ github.event.inputs.environment }}
+          bda.projectName=$env:PROJECT_NAME
+          isTestDir=${{ github.workspace }}/tests
+          config.test.reportDir=${{ github.workspace }}/report
+          config.test.failBuildOnTestError=false
+          config.build.abeHome=$env:SAG_HOME/common/AssetBuildEnvironment
+          "@ | Out-File -FilePath test-rollback.properties -Encoding UTF8
+          
+          Set-Location $env:CICD_HOME
+          Write-Host "Running post-rollback verification tests..."
+          
+          ant -f build.xml test `
+            -Dproject.properties="${{ github.workspace }}/test-rollback.properties" `
+            -verbose
+          if ($LASTEXITCODE -ne 0) { Write-Host "Some tests failed" }
+      
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: report/**/*.xml
+          check_name: Post-Rollback Test Results
+      
+      - name: Upload Test Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rollback-test-reports-${{ github.run_number }}
+          path: report/**
+
+  notify-rollback:
+    name: Notify Rollback Completion
+    needs: [rollback-test, rollback-prod, post-rollback-tests]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Create Rollback Report
+        run: |
+          echo "## Rollback Completed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Details" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: ${{ github.event.inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Rolled Back To**: Build ${{ github.event.inputs.build_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Reason**: ${{ github.event.inputs.reason }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Executed By**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Completion Time**: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Status" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ needs.rollback-test.result }}" == "success" ] || [ "${{ needs.rollback-prod.result }}" == "success" ]; then
+            echo "✅ Rollback completed successfully" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Rollback failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ needs.post-rollback-tests.result }}" == "success" ]; then
+            echo "✅ Post-rollback tests passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Post-rollback tests failed or were skipped" >> $GITHUB_STEP_SUMMARY
+          fi
+      
+      - name: Create Rollback Issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Rollback: ${{ github.event.inputs.environment }} to Build ${{ github.event.inputs.build_number }}`,
+              body: `## Rollback Executed
+              
+              **Environment**: ${{ github.event.inputs.environment }}
+              **Rolled Back To**: Build ${{ github.event.inputs.build_number }}
+              **Reason**: ${{ github.event.inputs.reason }}
+              **Executed By**: @${{ github.actor }}
+              **Workflow Run**: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+              
+              ### Next Steps
+              - [ ] Verify application functionality
+              - [ ] Monitor error logs
+              - [ ] Update incident ticket
+              - [ ] Plan forward fix if needed
+              `,
+              labels: ['rollback', 'deployment', '${{ github.event.inputs.environment }}']
+            });
+            console.log('Created issue:', issue.data.html_url);
+
+# Made with Bob

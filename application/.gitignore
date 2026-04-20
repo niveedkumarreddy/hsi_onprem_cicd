@@ -1,0 +1,60 @@
+# HSI On-Premise Application - Git Ignore
+
+# Build Output
+build/
+output/
+*.zip
+*.acdl
+
+# Deployer Generated Files
+deployer/config.cnf
+deployer/Deployment_*.xml
+deployer/projectAutomatorReport.xml
+deployer/logs/
+
+# Test Results
+tests/results/
+*.junit.xml
+
+# Temporary Files
+*.tmp
+*.temp
+*.bak
+*.swp
+*~
+
+# IDE Files
+.vscode/
+.idea/
+*.iml
+.project
+.classpath
+.settings/
+
+# OS Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Package Backup Files
+packages/**/*.bak
+packages/**/*.orig
+packages/**/*.backup
+
+# Compiled Classes
+packages/**/code/classes/**/*.class
+
+# Logs
+*.log
+logs/
+
+# ANT
+.ant-targets-build.xml
+
+# Sensitive Information (use GitHub Secrets instead)
+# Uncomment if you accidentally commit these
+# custom.properties
+# varsub/**/passwords.properties
+
+# CI/CD Framework (managed as submodule)
+# .cicd/ is tracked via .gitmodules

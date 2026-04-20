@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="Test-Execution" basedir="..">
+    
+    <!-- Test Execution Target -->
+    <target name="test.execute" depends="test.init, test.discover, test.run, test.report">
+        <echo message="Test execution completed"/>
+    </target>
+    
+    <!-- Initialize Test Environment -->
+    <target name="test.init">
+        <echo message="=== Initializing Test Environment ==="/>
+        <echo message="Target Environment: ${bda.targetEnv}"/>
+        <echo message="Test Directory: ${isTestDir}"/>
+        <echo message="Report Directory: ${config.test.reportDir}"/>
+        
+        <!-- Create report directory -->
+        <mkdir dir="${config.test.reportDir}"/>
+        
+        <!-- Verify test directory exists -->
+        <available file="${isTestDir}" type="dir" property="test.dir.exists"/>
+        <fail unless="test.dir.exists" message="Test directory not found: ${isTestDir}"/>
+        
+        <echo message="Test environment initialized"/>
+    </target>
+    
+    <!-- Discover Test Packages -->
+    <target name="test.discover">
+        <echo message="=== Discovering Test Packages ==="/>
+        
+        <!-- Find all test packages -->
+        <fileset id="test.packages" dir="${isTestDir}">
+            <include name="*/setup/*.xml"/>
+        </fileset>
+        
+        <!-- Count test packages -->
+        <resourcecount property="test.count">
+            <fileset refid="test.packages"/>
+        </resourcecount>
+        
+        <echo message="Found ${test.count} test file(s)"/>
+    </target>
+    
+    <!-- Run Tests -->
+    <target name="test.run">
+        <echo message="=== Running WmTestSuite Tests ==="/>
+        
+        <!-- Load environment-specific properties for test server -->
+        <property file="${basedir}/deployer/environments/${bda.targetEnv}.properties"/>
+        
+        <!-- Set test server properties from environment config -->
+        <property name="test.server.host" value="${IS_HOST}"/>
+        <property name="test.server.port" value="${IS_PORT}"/>
+        <property name="test.server.user" value="${IS_USERNAME}"/>
+        <property name="test.server.pwd" value="${IS_PASSWORD}"/>
+        
+        <echo message="Test Server: ${test.server.host}:${test.server.port}"/>
+        
+        <!-- Execute tests using custom test runner -->
+        <antcall target="test.executeTests"/>
+    </target>
+    
+    <!-- Execute Individual Tests -->
+    <target name="test.executeTests">
+        <echo message="=== Executing Tests on ${test.server.host}:${test.server.port} ==="/>
+        
+        <!-- Iterate through test files -->
+        <foreach target="test.runSingleTest" param="test.file">
+            <path>
+                <fileset dir="${isTestDir}">
+                    <include name="*/setup/*.xml"/>
+                </fileset>
+            </path>
+        </foreach>
+    </target>
+    
+    <!-- Run Single Test File -->
+    <target name="test.runSingleTest">
+        <echo message="Running test: ${test.file}"/>
+        
+        <!-- Extract test package name -->
+        <basename property="test.filename" file="${test.file}" suffix=".xml"/>
+        <dirname property="test.dirname" file="${test.file}"/>
+        <basename property="test.package" file="${test.dirname}"/>
+        <basename property="test.package.parent" file="${test.package}"/>
+        
+        <!-- Create test result file -->
+        <property name="test.result.file" value="${config.test.reportDir}/TEST-${test.package.parent}-${test.filename}.xml"/>
+        
+        <!-- Execute test via HTTP call to WmTestSuite -->
+        <exec executable="curl"
+              failonerror="false"
+              resultproperty="test.exit.code"
+              output="${test.result.file}">
+            <arg value="-X"/>
+            <arg value="POST"/>
+            <arg value="-u"/>
+            <arg value="${test.server.user}:${test.server.pwd}"/>
+            <arg value="-H"/>
+            <arg value="Content-Type: application/xml"/>
+            <arg value="--data-binary"/>
+            <arg value="@${test.file}"/>
+            <arg value="http://${test.server.host}:${test.server.port}/invoke/wm.server.test/executeTestSuite"/>
+        </exec>
+        
+        <!-- Check test execution result -->
+        <condition property="test.failed">
+            <not>
+                <equals arg1="${test.exit.code}" arg2="0"/>
+            </not>
+        </condition>
+        
+        <echo message="Test result saved: ${test.result.file}"/>
+        <echo message="Test exit code: ${test.exit.code}"/>
+        
+        <!-- Fail build if configured to do so -->
+        <fail if="test.failed" message="Test execution failed: ${test.file}">
+            <condition>
+                <istrue value="${config.test.failBuildOnTestError}"/>
+            </condition>
+        </fail>
+    </target>
+    
+    <!-- Generate Test Report -->
+    <target name="test.report">
+        <echo message="=== Generating Test Report ==="/>
+        
+        <!-- Count test results -->
+        <fileset id="test.results" dir="${config.test.reportDir}">
+            <include name="TEST-*.xml"/>
+        </fileset>
+        
+        <resourcecount property="test.results.count">
+            <fileset refid="test.results"/>
+        </resourcecount>
+        
+        <echo message="Generated ${test.results.count} test result file(s)"/>
+        <echo message="Test reports available in: ${config.test.reportDir}"/>
+        
+        <!-- Create summary report -->
+        <antcall target="test.createSummary"/>
+    </target>
+    
+    <!-- Create Test Summary -->
+    <target name="test.createSummary">
+        <echo message="=== Creating Test Summary ==="/>
+        
+        <property name="test.summary.file" value="${config.test.reportDir}/test-summary.txt"/>
+        
+        <echo file="${test.summary.file}">
+Test Execution Summary
+======================
+Environment: ${bda.targetEnv}
+Test Server: ${test.server.host}:${test.server.port}
+Test Directory: ${isTestDir}
+Total Test Files: ${test.results.count}
+Report Directory: ${config.test.reportDir}
+        </echo>
+        
+        <echo message="Test summary created: ${test.summary.file}"/>
+    </target>
+    
+    <!-- Clean Test Artifacts -->
+    <target name="test.clean">
+        <echo message="=== Cleaning Test Artifacts ==="/>
+        <delete dir="${config.test.reportDir}" failonerror="false"/>
+        <echo message="Test artifacts cleaned"/>
+    </target>
+    
+    <!-- Macro for foreach (if ant-contrib not available) -->
+    <macrodef name="foreach">
+        <attribute name="target"/>
+        <attribute name="param"/>
+        <element name="path"/>
+        <sequential>
+            <script language="groovy">
+                <![CDATA[
+                def ant = new AntBuilder()
+                def pathElement = elements.get('path')
+                
+                pathElement.each { fileSet ->
+                    def ds = fileSet.getDirectoryScanner(project)
+                    ds.scan()
+                    ds.getIncludedFiles().each { file ->
+                        def fullPath = new File(ds.getBasedir(), file).getAbsolutePath()
+                        ant.antcall(target: attributes.get('target')) {
+                            param(name: attributes.get('param'), value: fullPath)
+                        }
+                    }
+                }
+                ]]>
+            </script>
+        </sequential>
+    </macrodef>
+    
+</project>
+
+<!-- Made with Bob -->

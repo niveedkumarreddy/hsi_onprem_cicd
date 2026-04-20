@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<DeployerSpec exitOnError="true" sourceType="Repository">
+    <!-- Deployer Server Configuration -->
+    <DeployerServer>
+        <host>@IS_HOST@:@IS_PORT@</host>
+        <user>@IS_USERNAME@</user>
+        <pwd>@IS_PASSWORD@</pwd>
+    </DeployerServer>
+    
+    <!-- Environment Configuration -->
+    <Environment>
+        <!-- Source Repository (FBR from ABE build) -->
+        <Repository>
+            <repalias name="@FBR_REPO_NAME@">
+                <type>FlatFile</type>
+                <urlOrDirectory>@FBR_REPO_DIR@</urlOrDirectory>
+                <Test>false</Test>
+            </repalias>
+        </Repository>
+        
+        <!-- Target Integration Server -->
+        <IS>
+            <isalias name="@TARGET_ENV@_IS">
+                <host>@IS_HOST@</host>
+                <port>@IS_PORT@</port>
+                <user>@IS_USERNAME@</user>
+                <pwd>@IS_PASSWORD@</pwd>
+                <useSSL>false</useSSL>
+                <installDeployerResource>false</installDeployerResource>
+                <Test>false</Test>
+                <executeACL>Internal</executeACL>
+            </isalias>
+        </IS>
+        
+        <!-- Universal Messaging (if needed) -->
+        <UniversalMessaging>
+            <universalmessagingalias name="@TARGET_ENV@_UM">
+                <realmURL>nsp://@UM_HOST@:@UM_PORT@</realmURL>
+                <Test>false</Test>
+            </universalmessagingalias>
+        </UniversalMessaging>
+    </Environment>
+    
+    <!-- Deployment Projects -->
+    <Projects projectPrefix="@PROJECT_PREFIX@">
+        <Project description="Automated deployment for @TARGET_ENV@ - Build @BUILD_NUMBER@" 
+                 name="@PROJECT_NAME@_@BUILD_NUMBER@" 
+                 overwrite="true" 
+                 type="Repository">
+            
+            <!-- Project Properties -->
+            <ProjectProperties>
+                <Property name="projectLocking">false</Property>
+                <Property name="concurrentDeployment">true</Property>
+                <Property name="ignoreMissingDependencies">true</Property>
+                <Property name="isTransactionalDeployment">true</Property>
+                <Property name="enableVarSub">@DO_VARSUB@</Property>
+                <Property name="varSubDir">@VARSUB_DIR@</Property>
+            </ProjectProperties>
+            
+            <!-- Deployment Set (Define phase) -->
+            <DeploymentSet autoResolve="ignore" 
+                          description="Main Deployment Set for @TARGET_ENV@" 
+                          name="MainDeploymentSet" 
+                          srcAlias="@FBR_REPO_NAME@">
+                <!-- Deploy all IS packages from repository -->
+                <Composite name="*" srcAlias="@FBR_REPO_NAME@" type="IS"/>
+            </DeploymentSet>
+            
+            <!-- Deployment Map (Map phase) -->
+            <DeploymentMap description="Deployment Map for @TARGET_ENV@" 
+                          name="MainDeploymentMap"/>
+            
+            <!-- Map Set Mapping -->
+            <MapSetMapping mapName="MainDeploymentMap" setName="MainDeploymentSet">
+                <alias type="IS">@TARGET_ENV@_IS</alias>
+            </MapSetMapping>
+            
+            <!-- Deployment Candidate (Deploy phase) -->
+            <DeploymentCandidate description="Deploy to @TARGET_ENV@"
+                                mapName="MainDeploymentMap"
+                                name="MainDeploymentCandidate"/>
+        </Project>
+    </Projects>
+</DeployerSpec>
+
+<!-- Made with Bob -->

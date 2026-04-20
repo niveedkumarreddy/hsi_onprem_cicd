@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="ABE-Build" basedir="..">
+    
+    <!-- ABE Build Target -->
+    <target name="abe.build" depends="abe.init, abe.prepare, abe.execute, abe.verify">
+        <echo message="ABE build completed successfully"/>
+    </target>
+    
+    <!-- Initialize ABE build -->
+    <target name="abe.init">
+        <echo message="=== Initializing ABE Build ==="/>
+        <echo message="Project: ${bda.projectName}"/>
+        <echo message="Build Number: ${bda.buildNumber}"/>
+        <echo message="SAG Home: ${SAGHome}"/>
+        <echo message="ABE Home: ${config.build.abeHome}"/>
+        
+        <!-- Verify ABE installation -->
+        <available file="${config.build.abeHome}" type="dir" property="abe.exists"/>
+        <fail unless="abe.exists" message="ABE not found at: ${config.build.abeHome}"/>
+        
+        <!-- Create build directories -->
+        <mkdir dir="${config.tmpdir}"/>
+        <mkdir dir="${config.build.buildStorageDir}"/>
+        <mkdir dir="${fbrRepoDir}"/>
+        
+        <echo message="Build directories created"/>
+    </target>
+    
+    <!-- Prepare ABE build properties -->
+    <target name="abe.prepare">
+        <echo message="=== Preparing ABE Build Properties ==="/>
+        
+        <!-- Create ABE build properties file -->
+        <propertyfile file="${config.tmpdir}/abe-build.properties">
+            <entry key="build.source.dir" value="${isPackagesDir}"/>
+            <entry key="build.output.dir" value="${fbrRepoDir}"/>
+            <entry key="repo.name" value="${fbrRepoName}"/>
+            <entry key="project.name" value="${bda.projectName}"/>
+            <entry key="build.number" value="${bda.buildNumber}"/>
+        </propertyfile>
+        
+        <echo message="ABE properties file created: ${config.tmpdir}/abe-build.properties"/>
+    </target>
+    
+    <!-- Execute ABE build -->
+    <target name="abe.execute">
+        <echo message="=== Executing ABE Build ==="/>
+        <echo message="Building packages from: ${isPackagesDir}"/>
+        <echo message="Output directory: ${fbrRepoDir}"/>
+        
+        <!-- Call ABE -->
+        <exec executable="${config.build.abeHome}/bin/build.bat"
+              dir="${config.build.abeHome}"
+              failonerror="true"
+              osfamily="windows">
+            <arg value="-Dsource=${isPackagesDir}"/>
+            <arg value="-Dtarget=${config.build.buildStorageDir}"/>
+            <arg value="-Dproject.name=${bda.projectName}"/>
+        </exec>
+        
+        <exec executable="${config.build.abeHome}/bin/build.sh"
+              dir="${config.build.abeHome}"
+              failonerror="true"
+              osfamily="unix">
+            <arg value="-Dsource=${isPackagesDir}"/>
+            <arg value="-Dtarget=${config.build.buildStorageDir}"/>
+            <arg value="-Dproject.name=${bda.projectName}"/>
+        </exec>
+        
+        <echo message="ABE build execution completed"/>
+        
+        <!-- ABE output is already in the correct location -->
+        <echo message="ABE output location: ${fbrRepoDir}"/>
+    </target>
+    
+    <!-- Verify build output -->
+    <target name="abe.verify">
+        <echo message="=== Verifying Build Output ==="/>
+        
+        <!-- Check if FBR directory exists and has content -->
+        <available file="${fbrRepoDir}" type="dir" property="fbr.exists"/>
+        <fail unless="fbr.exists" message="Build failed: FBR directory not created at ${fbrRepoDir}"/>
+        
+        <!-- List build artifacts -->
+        <echo message="Build artifacts in ${fbrRepoDir}:"/>
+        <exec executable="cmd" osfamily="windows">
+            <arg value="/c"/>
+            <arg value="dir"/>
+            <arg value="${fbrRepoDir}"/>
+        </exec>
+        
+        <exec executable="ls" osfamily="unix">
+            <arg value="-la"/>
+            <arg value="${fbrRepoDir}"/>
+        </exec>
+        
+        <echo message="Build verification completed"/>
+    </target>
+    
+    <!-- Clean ABE build artifacts -->
+    <target name="abe.clean">
+        <echo message="=== Cleaning ABE Build Artifacts ==="/>
+        <delete dir="${fbrRepoDir}" failonerror="false"/>
+        <delete file="${config.tmpdir}/abe-build.properties" failonerror="false"/>
+        <echo message="ABE artifacts cleaned"/>
+    </target>
+    
+</project>
+
+<!-- Made with Bob -->

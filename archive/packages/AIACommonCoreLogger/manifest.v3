@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Values version="2.0">
+  <value name="enabled">yes</value>
+  <value name="system_package">no</value>
+  <value name="version">1.0</value>
+  <record name="startup_services" javaclass="com.wm.util.Values">
+    <null name="AIACommonCoreLogger.services.core:initLogger"/>
+  </record>
+  <null name="shutdown_services"/>
+  <null name="replication_services"/>
+  <record name="requires" javaclass="com.wm.util.Values">
+    <value name="AIACommonUtilities">1.0</value>
+  </record>
+  <value name="listACL">Default</value>
+  <value name="webappLoad">yes</value>
+  <value name="name">AIACommonCoreLogger</value>
+  <value name="build"></value>
+  <value name="description">Local_to_SIT_</value>
+  <value name="time">2019-05-02 12:54:55 IST</value>
+  <value name="jvm_version">1.8.0_181</value>
+  <null name="publisher"/>
+  <value name="patch_nums"></value>
+</Values>

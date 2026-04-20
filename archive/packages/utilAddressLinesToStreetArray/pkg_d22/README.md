@@ -1,0 +1,2 @@
+# Package Name : pkg_d226c3e335a848f7a55d6a0cacd12762_exported
+This is a webMethods package and requires a webMethods Integration Server to host it. Package versioning and configuration can be found in the package [manifest](./pkg_d226c3e335a848f7a55d6a0cacd12762_exported/manifest.v3) file. Service and API documentation is available on the package's home page http://&lt;server&gt;:&lt;port&gt;/&lt;packagename>.

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Values version="2.0">
+  <value name="name">pkg_d226c3e335a848f7a55d6a0cacd12762_exported</value>
+  <value name="version"></value>
+  <value name="build"></value>
+  <value name="patch_nums"></value>
+  <null name="description"/>
+  <value name="target_pkg_version"></value>
+  <value name="jvm_version"></value>
+  <value name="source_server_version">11.1.0.0</value>
+  <value name="target_server_version"></value>
+  <value name="time">2026-03-31 15:00:37:087 GMT</value>
+  <null name="type"/>
+  <value name="retainPatchHistory">yes</value>
+  <value name="target_pkg_name">pkg_d226c3e335a848f7a55d6a0cacd12762_exported</value>
+  <null name="publisher"/>
+</Values>

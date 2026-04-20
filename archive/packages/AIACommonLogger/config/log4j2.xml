@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Configuration status="warn" monitorInterval="30">
+	<Properties>
+		<Property name="AIALogging-Filepath">/opt/softwareag/IntegrationServer/applicationLogs/</Property> <!-- Filepath  -->
+		<Property name="AIALogging-Rolled-Logpath">/opt/softwareag/IntegrationServer/applicationLogs/</Property> <!-- Rolling Filepath  -->
+		<Property name="AIALogging-MPV-Filename">${hostName}-MPV</Property>	  <!-- MPV Filename  -->
+		<Property name="AIALogging-VE-Filename">${hostName}-VE</Property>	  <!-- VE Filename  -->
+		<Property name="AIALogging-VPF-Filename">${hostName}-VPF</Property>	  <!-- VPF Filename  -->
+		<Property name="AIALogging-Common-Filename">${hostName}-CommonVitality</Property>	  <!-- Common Filename  -->
+		<Property name="AIALogging-Error-Filepath">/opt/softwareag/IntegrationServer/applicationLogs/</Property> <!-- Erro Filepath  -->
+		<Property name="AIALogging-Error-Rolled-Logpath">/opt/softwareag/IntegrationServer/applicationLogs/</Property> <!-- Rolling Error Filepath  -->
+		<Property name="AIALogging-Error-Filename">${hostName}-VitalityError</Property>	  <!-- Error Filename  -->
+	</Properties>
+	<Appenders>
+	   <!-- Appender for My Page Vitality (MPV) Application  --> 
+		<RollingRandomAccessFile name="AIALogging-MPV-Appender" fileName="${AIALogging-Filepath}/${AIALogging-MPV-Filename}.log"
+                          filePattern="${AIALogging-Rolled-Logpath}/${AIALogging-MPV-Filename}-rolled-%d{yyyy-MM-dd}-%i.log" immediateFlush="false" append="true">
+				<PatternLayout pattern="[%level] %msg%n"/>
+			<Policies>
+				<SizeBasedTriggeringPolicy size="50 MB" />
+			</Policies>
+			<DefaultRolloverStrategy max="10">
+				<Delete basePath="${AIALogging-Rolled-Logpath}" maxDepth="1">
+					<IfFileName glob="*-rolled-*.log">
+					<IfLastModified age="1d"/>
+					</IfFileName>
+				</Delete>
+			</DefaultRolloverStrategy>
+		</RollingRandomAccessFile >
+		<!-- Appender for Vitality Engage (VE) Application  --> 
+		<RollingRandomAccessFile name="AIALogging-VE-Appender" fileName="${AIALogging-Filepath}/${AIALogging-VE-Filename}.log"
+                          filePattern="${AIALogging-Rolled-Logpath}/${AIALogging-VE-Filename}-rolled-%d{yyyy-MM-dd}-%i.log" immediateFlush="false" append="true">
+				<PatternLayout pattern="[%level] %msg%n"/>
+			<Policies>
+				<SizeBasedTriggeringPolicy size="50 MB" />
+			</Policies>
+			<DefaultRolloverStrategy max="10">
+				<Delete basePath="${AIALogging-Rolled-Logpath}" maxDepth="1">
+					<IfFileName glob="*-rolled-*.log">
+					<IfLastModified age="1d"/>
+					</IfFileName>
+				</Delete>
+			</DefaultRolloverStrategy>
+		</RollingRandomAccessFile >
+		<!-- Appender for Vitality Partner Framework (VPF) Application  --> 
+		<RollingRandomAccessFile name="AIALogging-VPF-Appender" fileName="${AIALogging-Filepath}/${AIALogging-VPF-Filename}.log"
+                          filePattern="${AIALogging-Rolled-Logpath}/${AIALogging-VPF-Filename}-rolled-%d{yyyy-MM-dd}-%i.log" immediateFlush="false" append="true">
+				<PatternLayout pattern="[%level] %msg%n"/>
+			<Policies>
+				<SizeBasedTriggeringPolicy size="50 MB" />
+			</Policies>
+			<DefaultRolloverStrategy max="10">
+				<Delete basePath="${AIALogging-Rolled-Logpath}" maxDepth="1">
+					<IfFileName glob="*-rolled-*.log">
+					<IfLastModified age="1d"/>
+					</IfFileName>
+				</Delete>
+			</DefaultRolloverStrategy>
+		</RollingRandomAccessFile >
+		<!-- Appender for Vitality Common (Common) Application  --> 
+		<RollingRandomAccessFile name="AIALogging-Common-Appender" fileName="${AIALogging-Filepath}/${AIALogging-Common-Filename}.log"
+                          filePattern="${AIALogging-Rolled-Logpath}/${AIALogging-Common-Filename}-rolled-%d{yyyy-MM-dd}-%i.log" immediateFlush="false" append="true">
+				<PatternLayout pattern="[%level] %msg%n"/>
+			<Policies>
+				<SizeBasedTriggeringPolicy size="50 MB" />
+			</Policies>
+			<DefaultRolloverStrategy max="10">
+				<Delete basePath="${AIALogging-Rolled-Logpath}" maxDepth="1">
+					<IfFileName glob="*-rolled-*.log">
+					<IfLastModified age="1d"/>
+					</IfFileName>
+				</Delete>
+			</DefaultRolloverStrategy>
+		</RollingRandomAccessFile >
+		<!-- Appender for Vitality Error (Error) Application  --> 
+		<RollingRandomAccessFile name="AIALogging-Error-Appender" fileName="${AIALogging-Error-Filepath}/${AIALogging-Error-Filename}.log"
+                          filePattern="${AIALogging-Error-Rolled-Logpath}/${AIALogging-Error-Filename}-rolled-%d{yyyy-MM-dd}-%i.log" immediateFlush="false" append="true">
+				<PatternLayout pattern="[%level] %msg%n"/>
+			<Policies>
+				<SizeBasedTriggeringPolicy size="50 MB" />
+			</Policies>
+			<DefaultRolloverStrategy max="10">
+				<Delete basePath="${AIALogging-Error-Rolled-Logpath}" maxDepth="1">
+					<IfFileName glob="*-rolled-*.log">
+					<IfLastModified age="1d"/>
+					</IfFileName>
+				</Delete>
+			</DefaultRolloverStrategy>
+		</RollingRandomAccessFile >
+	</Appenders>
+	<Loggers>
+		<!-- Logger for My Page Vitality (MPV) Application  --> 
+		<Logger  name="AIALogging-MPV-Logger" level="ALL">
+			<AppenderRef ref="AIALogging-MPV-Appender"/>
+		</Logger>
+		<!-- Logger for Vitality Engage (VE) Application  --> 
+		<Logger  name="AIALogging-VE-Logger" level="ALL">
+			<AppenderRef ref="AIALogging-VE-Appender"/>
+		</Logger>
+		<!-- Logger for Vitality Partner Framework (VPF) Application  --> 
+		<Logger  name="AIALogging-VPF-Logger" level="ALL">
+			<AppenderRef ref="AIALogging-VPF-Appender"/>
+		</Logger>
+		<!-- Logger for Vitality Common (Common) Application  --> 
+		<Logger  name="AIALogging-Common-Logger" level="ALL">
+			<AppenderRef ref="AIALogging-Common-Appender"/>
+		</Logger>
+		<!-- Logger for Vitality Error (Error) Application  --> 
+		<Logger  name="AIALogging-Error-Logger" level="ALL">
+			<AppenderRef ref="AIALogging-Error-Appender"/>
+		</Logger>
+		<Root level="info">
+            <AppenderRef ref="console" />
+        </Root>	
+	</Loggers>
+</Configuration>

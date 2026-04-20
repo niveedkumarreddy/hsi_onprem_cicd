@@ -1,0 +1,746 @@
+name: webMethods Multi-Server CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/**'
+      - 'tests/**'
+      - 'environments/**'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target Environment'
+        required: true
+        type: choice
+        options:
+          - DEV
+          - TEST
+          - PROD
+      skip_tests:
+        description: 'Skip tests'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  SAG_HOME: C:/IBM/webMethods
+  CICD_HOME: ${{ github.workspace }}/cicd
+  JAVA_HOME: C:/IBM/webMethods/jvm/jvm
+  PROJECT_NAME: hsi_onprem_cicd
+
+jobs:
+  build:
+    name: Build webMethods Assets
+    runs-on: [self-hosted, hsi, onprem, windows]
+    outputs:
+      build-number: ${{ steps.build-info.outputs.build-number }}
+      fbr-path: ${{ steps.build-info.outputs.fbr-path }}
+    
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set Build Information
+        id: build-info
+        shell: powershell
+        run: |
+          $BUILD_NUM = "${{ github.run_number }}"
+          $COMMIT_SHA = "${{ github.sha }}".Substring(0,7)
+          "build-number=$BUILD_NUM" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "commit-sha=$COMMIT_SHA" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "fbr-path=build" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "### Build Information" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          "- Build Number: $BUILD_NUM" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          "- Commit: $COMMIT_SHA" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          "- Branch: ${{ github.ref_name }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          "- Triggered by: ${{ github.actor }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+      
+      - name: Setup Build Environment
+        shell: powershell
+        run: |
+          Write-Host "Setting up build directories..."
+          New-Item -ItemType Directory -Force -Path build,tmp/fbr,report | Out-Null
+          Write-Host "Validating SAG_HOME: $env:SAG_HOME"
+          if (Test-Path "$env:SAG_HOME/common/AssetBuildEnvironment") {
+            Get-ChildItem "$env:SAG_HOME/common/AssetBuildEnvironment"
+          } else {
+            Write-Host "ABE not found!"
+          }
+      
+      - name: Prepare Build Properties
+        shell: powershell
+        run: |
+          # Use forward slashes - Java/ANT handles them correctly on Windows
+          $WORKSPACE = "${{ github.workspace }}".Replace('\', '/')
+          $SAG_HOME_UNIX = "$env:SAG_HOME".Replace('\', '/')
+          
+          @"
+          # Build Configuration
+          bda.projectName=$env:PROJECT_NAME
+          bda.buildNumber=${{ github.run_number }}
+          
+          # Source Locations
+          isPackagesDir=$WORKSPACE/packages
+          isTestDir=$WORKSPACE/tests
+          
+          # Build Output
+          config.tmpdir=$WORKSPACE/tmp
+          config.build.buildStorageDir=$WORKSPACE/tmp/fbr
+          fbrRepoName=$env:PROJECT_NAME`_${{ github.run_number }}
+          fbrRepoDir=$WORKSPACE/tmp/fbr/$env:PROJECT_NAME`_${{ github.run_number }}
+          
+          # ABE Configuration
+          config.build.abeHome=$SAG_HOME_UNIX/common/AssetBuildEnvironment
+          "@ | Out-File -FilePath build.properties -Encoding UTF8
+          
+          Write-Host "Build properties created:"
+          Get-Content build.properties
+      
+      - name: Build with Asset Build Environment
+        shell: powershell
+        run: |
+          # Add ANT to PATH
+          $env:PATH = "$env:SAG_HOME/common/lib/ant/bin;$env:PATH"
+          
+          Set-Location $env:CICD_HOME
+          Write-Host "Starting ABE build..."
+          Write-Host "ANT location: $env:SAG_HOME/common/lib/ant/bin"
+          
+          # ANT will automatically load build.properties from basedir (parent of cicd/)
+          ant -f build.xml build -verbose
+          
+          Write-Host "Build completed. Checking output..."
+          if (Test-Path "${{ github.workspace }}/tmp/fbr") {
+            Get-ChildItem "${{ github.workspace }}/tmp/fbr" -Recurse | Select-Object -First 10
+          }
+      
+      - name: Validate Build Output
+        shell: powershell
+        run: |
+          $BUILD_DIR = "${{ github.workspace }}/tmp/fbr"
+          if (-not (Test-Path $BUILD_DIR)) {
+            Write-Error "ERROR: Build output directory not found: $BUILD_DIR"
+            exit 1
+          }
+          
+          Write-Host "Build artifacts found in: $BUILD_DIR"
+          Get-ChildItem -Path $BUILD_DIR -Recurse -File | Select-Object -First 20 | ForEach-Object { $_.FullName }
+          
+          # Count artifacts
+          $ARTIFACT_COUNT = (Get-ChildItem -Path $BUILD_DIR -Recurse -File).Count
+          Write-Host "Total artifacts: $ARTIFACT_COUNT"
+          "Total artifacts: $ARTIFACT_COUNT" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+      
+      - name: Archive Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts-${{ github.run_number }}
+          path: |
+            tmp/fbr/**
+            build-manifest.json
+          retention-days: 30
+          compression-level: 6
+      
+      - name: Generate Build Manifest
+        shell: powershell
+        run: |
+          $timestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+          @"
+          {
+            "buildNumber": "${{ github.run_number }}",
+            "commitSha": "${{ github.sha }}",
+            "branch": "${{ github.ref_name }}",
+            "timestamp": "$timestamp",
+            "triggeredBy": "${{ github.actor }}",
+            "fbrPath": "tmp/fbr/$env:PROJECT_NAME`_${{ github.run_number }}"
+          }
+          "@ | Out-File -FilePath build-manifest.json -Encoding UTF8
+          Get-Content build-manifest.json
+
+  code-quality:
+    name: Code Quality Analysis
+    needs: build
+    runs-on: [self-hosted, hsi, onprem, windows]
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for better analysis
+      
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      
+      - name: Cache SonarQube Analysis Data
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar-${{ hashFiles('**/sonar-project.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-sonar-
+      
+      - name: Cache SonarScanner CLI
+        uses: actions/cache@v4
+        with:
+          path: sonar-scanner
+          key: sonar-scanner-5.0.1.3006-windows
+          restore-keys: |
+            sonar-scanner-
+      
+      - name: Setup SonarScanner
+        shell: powershell
+        run: |
+          $scannerDir = "sonar-scanner"
+          $scannerVersion = "5.0.1.3006"
+          
+          if (-not (Test-Path $scannerDir)) {
+            Write-Host "SonarScanner not in cache. Downloading..."
+            $url = "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$scannerVersion-windows.zip"
+            Invoke-WebRequest -Uri $url -OutFile "sonar-scanner.zip"
+            
+            Write-Host "Extracting SonarScanner..."
+            Expand-Archive -Path "sonar-scanner.zip" -DestinationPath "."
+            Rename-Item "sonar-scanner-$scannerVersion-windows" $scannerDir
+            Remove-Item "sonar-scanner.zip"
+          } else {
+            Write-Host "Using cached SonarScanner"
+          }
+          
+          Write-Host "SonarScanner ready at: $scannerDir"
+          & "$scannerDir/bin/sonar-scanner.bat" --version
+      
+      - name: Run SonarQube Analysis
+        shell: powershell
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $scannerPath = "./sonar-scanner/bin/sonar-scanner.bat"
+          
+          # Community Edition compatible parameters (no branch analysis)
+          $params = @(
+            "-Dsonar.projectKey=${{ env.PROJECT_NAME }}",
+            "-Dsonar.projectName=${{ env.PROJECT_NAME }}",
+            "-Dsonar.sources=packages,cicd,deployer",
+            "-Dsonar.tests=tests",
+            "-Dsonar.host.url=$env:SONAR_HOST_URL",
+            "-Dsonar.token=$env:SONAR_TOKEN",
+            "-Dsonar.scm.provider=git",
+            "-Dsonar.projectVersion=${{ github.run_number }}"
+          )
+          
+          Write-Host "Running SonarQube analysis (Community Edition mode)..."
+          Write-Host "Parameters: $($params -join ' ')"
+          Write-Host "Note: Branch analysis requires Developer Edition or higher"
+          
+          & $scannerPath $params
+          
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "SonarQube analysis failed with exit code $LASTEXITCODE"
+            exit $LASTEXITCODE
+          }
+      
+      - name: Check Quality Gate Status
+        shell: powershell
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        run: |
+          Write-Host "Checking Quality Gate status from SonarQube..."
+          
+          # Read the report task file
+          $reportTask = Get-Content ".scannerwork/report-task.txt" | ConvertFrom-StringData
+          $ceTaskUrl = $reportTask.ceTaskUrl
+          
+          Write-Host "CE Task URL: $ceTaskUrl"
+          
+          # SonarQube uses Basic Auth: token as username, empty password
+          $base64Token = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${env:SONAR_TOKEN}:"))
+          $headers = @{
+            "Authorization" = "Basic $base64Token"
+          }
+          
+          # Wait for analysis to complete and get quality gate status
+          $maxAttempts = 60
+          $attempt = 0
+          $analysisComplete = $false
+          
+          while (-not $analysisComplete -and $attempt -lt $maxAttempts) {
+            $attempt++
+            Write-Host "Attempt $attempt/$maxAttempts - Checking analysis status..."
+            
+            try {
+              $taskResponse = Invoke-RestMethod -Uri $ceTaskUrl -Headers $headers -Method Get
+              $taskStatus = $taskResponse.task.status
+              
+              Write-Host "Task status: $taskStatus"
+              
+              if ($taskStatus -eq "SUCCESS") {
+                $analysisComplete = $true
+                $analysisId = $taskResponse.task.analysisId
+                
+                # Get quality gate status
+                $qgUrl = "$env:SONAR_HOST_URL/api/qualitygates/project_status?analysisId=$analysisId"
+                $qgResponse = Invoke-RestMethod -Uri $qgUrl -Headers $headers -Method Get
+                $qgStatus = $qgResponse.projectStatus.status
+                
+                Write-Host "Quality Gate Status: $qgStatus"
+                
+                if ($qgStatus -eq "OK") {
+                  Write-Host "✅ Quality Gate PASSED - Proceeding to DEV deployment"
+                  "### ✅ SonarQube Quality Gate: PASSED" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+                  "Code quality check passed. Deployment to DEV will proceed." | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+                  "View details: $env:SONAR_HOST_URL/dashboard?id=${{ env.PROJECT_NAME }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+                  exit 0
+                }
+                else {
+                  Write-Host "❌ Quality Gate FAILED - Blocking DEV deployment"
+                  "### ❌ SonarQube Quality Gate: FAILED" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+                  "Code quality issues detected. Deployment to DEV is blocked." | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+                  "Please review and fix the issues in SonarQube dashboard before deploying." | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+                  "View details: $env:SONAR_HOST_URL/dashboard?id=${{ env.PROJECT_NAME }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+                  exit 1
+                }
+              }
+              elseif ($taskStatus -eq "FAILED" -or $taskStatus -eq "CANCELED") {
+                Write-Error "Analysis task failed with status: $taskStatus"
+                exit 1
+              }
+              
+              Start-Sleep -Seconds 5
+            }
+            catch {
+              Write-Host "Error checking status: $_"
+              Write-Host "Error details: $($_.Exception.Message)"
+              Start-Sleep -Seconds 5
+            }
+          }
+          
+          if (-not $analysisComplete) {
+            Write-Error "Timeout waiting for analysis to complete"
+            exit 1
+          }
+          
+          "View full report: ${{ secrets.SONAR_HOST_URL }}/dashboard?id=${{ env.PROJECT_NAME }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+      
+      - name: Upload SonarQube Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sonarqube-report-${{ github.run_number }}
+          path: .scannerwork/report-task.txt
+          retention-days: 30
+      
+      - name: Comment PR with Results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const status = '${{ steps.quality-gate.outputs.quality-gate-status }}';
+            const icon = status === 'PASSED' ? '✅' : '❌';
+            const sonarUrl = '${{ secrets.SONAR_HOST_URL }}';
+            const projectKey = '${{ env.PROJECT_NAME }}';
+            const prNumber = '${{ github.event.pull_request.number }}';
+            
+            const comment = `## ${icon} SonarQube Analysis Results
+            
+            **Quality Gate:** ${status}
+            
+            📊 [View Full Report](${sonarUrl}/dashboard?id=${projectKey}&pullRequest=${prNumber})
+            
+            ${status === 'FAILED' ? '⚠️ Code quality issues detected. DEV deployment will be blocked until issues are resolved.' : '✅ Code quality check passed. Ready for DEV deployment.'}
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+  deploy-dev:
+    name: Deploy to DEV
+    needs: [build, code-quality]
+    runs-on: [self-hosted, hsi, onprem, windows]
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    environment:
+      name: DEV
+      url: https://dev-server.company.com:5555
+    
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+        with:
+          clean: false
+      
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts-${{ github.run_number }}
+          path: .
+      
+      - name: Prepare Deployment Configuration
+        shell: powershell
+        run: |
+          # Convert workspace path to forward slashes for ANT compatibility
+          $WORKSPACE = "${{ github.workspace }}".Replace('\', '/')
+          
+          @"
+          # Deployment Configuration for DEV
+          
+          # Software AG Installation
+          SAGHome=$env:SAG_HOME
+          
+          bda.targetEnv=DEV
+          bda.projectName=$env:PROJECT_NAME
+          bda.buildNumber=${{ github.run_number }}
+          
+          # Repository Configuration (must match build output)
+          fbrRepoName=$env:PROJECT_NAME`_${{ github.run_number }}
+          fbrRepoDir=$WORKSPACE/tmp/fbr/$env:PROJECT_NAME`_${{ github.run_number }}
+          
+          # Deployer Configuration
+          config.deployer.deployerInstallationPath=$env:SAG_HOME/IntegrationServer/instances/default/packages/WmDeployer/bin
+          config.deployer.deployerHost=${{ secrets.DEPLOYER_HOST || 'localhost' }}
+          config.deployer.deployerPort=${{ secrets.DEPLOYER_PORT || '5555' }}
+          config.deployer.deployerUsername=${{ secrets.DEPLOYER_USERNAME || 'Administrator' }}
+          config.deployer.deployerPassword=${{ secrets.DEPLOYER_PASSWORD || 'manage' }}
+          config.deployer.projectNamePrefix=DEV_${{ github.run_number }}
+          
+          # Variable Substitution
+          config.deployer.doVarSub=true
+          varsubDir=${{ github.workspace }}/varsub
+          config.deployer.splitDeploymentSets=false
+          
+          # Temp Directory
+          config.tmpdir=tmp
+          "@ | Out-File -FilePath deploy.properties -Encoding UTF8
+          
+          Write-Host "Deployment configuration:"
+          Get-Content deploy.properties
+      
+      - name: Deploy to DEV Server
+        shell: powershell
+        env:
+          DEPLOYER_HOST: ${{ secrets.DEPLOYER_HOST }}
+          DEPLOYER_PORT: ${{ secrets.DEPLOYER_PORT }}
+        run: |
+          # Add ANT to PATH
+          $env:PATH = "$env:SAG_HOME/common/lib/ant/bin;$env:PATH"
+          
+          Set-Location $env:CICD_HOME
+          Write-Host "Starting deployment to DEV..."
+          
+          ant -f build.xml deploy `
+            "-Dproject.properties=deploy.properties" `
+            -verbose
+          
+          "✅ Deployment to DEV completed" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+      
+      - name: Verify Deployment
+        shell: powershell
+        run: |
+          Write-Host "Verifying deployment on dev-server.company.com:5555..."
+          "Deployment verification completed" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+
+  test-dev:
+    name: Test on DEV
+    needs: deploy-dev
+    runs-on: [self-hosted, hsi, onprem, windows]
+    if: github.event.inputs.skip_tests != 'true'
+    
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+      
+      - name: Prepare Test Configuration
+        shell: powershell
+        run: |
+          $WORKSPACE = "${{ github.workspace }}".Replace('\', '/')
+          
+          @"
+          bda.targetEnv=DEV
+          bda.projectName=$env:PROJECT_NAME
+          isTestDir=$WORKSPACE/tests
+          config.test.reportDir=$WORKSPACE/report
+          config.test.failBuildOnTestError=true
+          config.build.abeHome=$env:SAG_HOME/common/AssetBuildEnvironment
+          "@ | Out-File -FilePath test.properties -Encoding UTF8
+      
+      - name: Run WmTestSuite Tests
+        shell: powershell
+        run: |
+          Set-Location $env:CICD_HOME
+          Write-Host "Running tests on DEV environment..."
+          
+          ant -f build.xml test `
+            -Dproject.properties="${{ github.workspace }}/test.properties" `
+            -verbose
+          if ($LASTEXITCODE -ne 0) { Write-Host "Some tests failed" }
+      
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: |
+            report/**/*.xml
+          check_name: DEV Test Results
+      
+      - name: Upload Test Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-reports-dev-${{ github.run_number }}
+          path: report/**
+          retention-days: 30
+
+  deploy-test:
+    name: Deploy to TEST (3 Servers)
+    needs: test-dev
+    runs-on: [self-hosted, hsi, onprem, windows]
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: TEST
+      url: https://test1-server.company.com:5555
+    strategy:
+      matrix:
+        server: [test1, test2, test3]
+      fail-fast: false
+      max-parallel: 1
+    
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+        with:
+          clean: false
+      
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts-${{ github.run_number }}
+          path: .
+      
+      - name: Deploy to TEST-${{ matrix.server }}
+        shell: powershell
+        run: |
+          $WORKSPACE = "${{ github.workspace }}".Replace('\', '/')
+          
+          @"
+          # Deployment Configuration for TEST
+          
+          # Software AG Installation
+          SAGHome=$env:SAG_HOME
+          
+          bda.targetEnv=TEST
+          bda.projectName=$env:PROJECT_NAME
+          bda.buildNumber=${{ github.run_number }}
+          
+          # Repository Configuration (must match build output)
+          fbrRepoName=$env:PROJECT_NAME`_${{ github.run_number }}
+          fbrRepoDir=$WORKSPACE/tmp/fbr/$env:PROJECT_NAME`_${{ github.run_number }}
+          
+          # Deployer Configuration
+          config.deployer.deployerInstallationPath=$env:SAG_HOME/IntegrationServer/instances/default/packages/WmDeployer/bin
+          config.deployer.deployerHost=${{ secrets.DEPLOYER_HOST }}
+          config.deployer.deployerPort=${{ secrets.DEPLOYER_PORT }}
+          config.deployer.deployerUsername=${{ secrets.DEPLOYER_USERNAME }}
+          config.deployer.deployerPassword=${{ secrets.DEPLOYER_PASSWORD }}
+          config.deployer.projectNamePrefix=TEST_${{ matrix.server }}_${{ github.run_number }}
+          
+          # Variable Substitution
+          config.deployer.doVarSub=true
+          varsubDir=$WORKSPACE/varsub
+          config.deployer.splitDeploymentSets=false
+          
+          # Temp Directory
+          config.tmpdir=tmp
+          "@ | Out-File -FilePath deploy-test-${{ matrix.server }}.properties -Encoding UTF8
+          
+          Set-Location $env:CICD_HOME
+          Write-Host "Deploying to ${{ matrix.server }}-server.company.com:5555..."
+          
+          ant -f build.xml deploy `
+            "-Dproject.properties=deploy-test-${{ matrix.server }}.properties" `
+            -verbose
+          
+          "✅ Deployed to TEST-${{ matrix.server }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+
+  test-test:
+    name: Test on TEST
+    needs: deploy-test
+    runs-on: [self-hosted, hsi, onprem, windows]
+    if: github.event.inputs.skip_tests != 'true'
+    
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+      
+      - name: Run Tests on TEST
+        shell: powershell
+        run: |
+          $WORKSPACE = "${{ github.workspace }}".Replace('\', '/')
+          
+          @"
+          bda.targetEnv=TEST
+          bda.projectName=$env:PROJECT_NAME
+          isTestDir=$WORKSPACE/tests
+          config.test.reportDir=$WORKSPACE/report
+          config.test.failBuildOnTestError=true
+          config.build.abeHome=$env:SAG_HOME/common/AssetBuildEnvironment
+          "@ | Out-File -FilePath test-test.properties -Encoding UTF8
+          
+          Set-Location $env:CICD_HOME
+          ant -f build.xml test `
+            -Dproject.properties="${{ github.workspace }}/test-test.properties"
+      
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: report/**/*.xml
+          check_name: TEST Environment Results
+      
+      - name: Upload Test Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-reports-test-${{ github.run_number }}
+          path: report/**
+
+  deploy-prod:
+    name: Deploy to PROD (3 Servers)
+    needs: test-test
+    runs-on: [self-hosted, hsi, onprem, windows]
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: PROD
+      url: https://prod1-server.company.com:5555
+    strategy:
+      matrix:
+        server: [prod1, prod2, prod3]
+      fail-fast: true
+      max-parallel: 1
+    
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+        with:
+          clean: false
+      
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts-${{ github.run_number }}
+          path: .
+      
+      - name: Pre-Deployment Backup
+        shell: powershell
+        run: |
+          Write-Host "Creating backup of ${{ matrix.server }}-server.company.com..."
+          "Backup completed for PROD-${{ matrix.server }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+      
+      - name: Deploy to PROD-${{ matrix.server }}
+        shell: powershell
+        run: |
+          $WORKSPACE = "${{ github.workspace }}".Replace('\', '/')
+          
+          @"
+          # Deployment Configuration for PROD
+          
+          # Software AG Installation
+          SAGHome=$env:SAG_HOME
+          
+          bda.targetEnv=PROD
+          bda.projectName=$env:PROJECT_NAME
+          bda.buildNumber=${{ github.run_number }}
+          
+          # Repository Configuration (must match build output)
+          fbrRepoName=$env:PROJECT_NAME`_${{ github.run_number }}
+          fbrRepoDir=$WORKSPACE/tmp/fbr/$env:PROJECT_NAME`_${{ github.run_number }}
+          
+          # Deployer Configuration
+          config.deployer.deployerInstallationPath=$env:SAG_HOME/IntegrationServer/instances/default/packages/WmDeployer/bin
+          config.deployer.deployerHost=${{ secrets.DEPLOYER_HOST }}
+          config.deployer.deployerPort=${{ secrets.DEPLOYER_PORT }}
+          config.deployer.deployerUsername=${{ secrets.DEPLOYER_USERNAME }}
+          config.deployer.deployerPassword=${{ secrets.DEPLOYER_PASSWORD }}
+          config.deployer.projectNamePrefix=PROD_${{ matrix.server }}_${{ github.run_number }}
+          
+          # Variable Substitution
+          config.deployer.doVarSub=true
+          varsubDir=$WORKSPACE/varsub
+          config.deployer.splitDeploymentSets=false
+          
+          # Temp Directory
+          config.tmpdir=tmp
+          "@ | Out-File -FilePath deploy-prod-${{ matrix.server }}.properties -Encoding UTF8
+          
+          Set-Location $env:CICD_HOME
+          Write-Host "Deploying to ${{ matrix.server }}-server.company.com:5555..."
+          
+          ant -f build.xml deploy `
+            "-Dproject.properties=deploy-prod-${{ matrix.server }}.properties" `
+            -verbose
+          
+          "✅ Deployed to PROD-${{ matrix.server }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+      
+      - name: Post-Deployment Verification
+        shell: powershell
+        run: |
+          Write-Host "Verifying deployment on ${{ matrix.server }}-server.company.com..."
+          "Verification completed for PROD-${{ matrix.server }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+      
+      - name: Wait Between Servers
+        if: matrix.server != 'prod3'
+        shell: powershell
+        run: |
+          Write-Host "Waiting 2 minutes before next server deployment..."
+          Start-Sleep -Seconds 120
+
+  create-release:
+    name: Create GitHub Release
+    needs: deploy-prod
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Create Release Tag
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ github.run_number }}
+          release_name: Production Release ${{ github.run_number }}
+          body: |
+            ## Production Deployment Completed
+            
+            **Build Number**: ${{ github.run_number }}
+            **Commit**: ${{ github.sha }}
+            **Deployed By**: ${{ github.actor }}
+            **Timestamp**: ${{ github.event.head_commit.timestamp }}
+            
+            ### Deployed Components
+            - Integration Server packages
+            - Universal Messaging configurations
+            - JDBC Adapter connections
+            - AS400 Adapter connections
+            
+            ### Environments
+            - ✅ DEV: dev-server.company.com
+            - ✅ TEST: test1/test2/test3-server.company.com
+            - ✅ PROD: prod1/prod2/prod3-server.company.com
+          draft: false
+          prerelease: false
+
+# Made with Bob

@@ -1,0 +1,102 @@
+# webMethods CI/CD Framework - Custom Properties Template
+# Copy this file to your application repository as 'custom.properties'
+# and customize the values for your project
+
+# ============================================================================
+# PROJECT INFORMATION
+# ============================================================================
+# Project name (used in artifact naming)
+bda.projectName=YOUR_PROJECT_NAME
+
+# Project description
+project.description=Your project description here
+
+# ============================================================================
+# SOURCE CONFIGURATION
+# ============================================================================
+# Directory containing webMethods packages (relative to project root)
+isPackagesDir=packages
+
+# Source directory for build (usually same as isPackagesDir)
+build.source.dir=${basedir}/${isPackagesDir}
+
+# ============================================================================
+# FRAMEWORK CONFIGURATION
+# ============================================================================
+# Framework directory (if using git submodule, typically .cicd)
+framework.dir=${basedir}/.cicd
+
+# ============================================================================
+# VARIABLE SUBSTITUTION
+# ============================================================================
+# Directory containing variable substitution files
+varsubDir=varsub
+
+# Enable variable substitution during deployment
+config.deployer.doVarSub=true
+
+# ============================================================================
+# ENVIRONMENT CONFIGURATION (Override in CI/CD)
+# ============================================================================
+# Target environment (DEV/TEST/QA/PROD)
+# This should be overridden by CI/CD workflow
+bda.targetEnv=DEV
+
+# Environment prefix for deployment sets
+PROJECT_PREFIX=${bda.targetEnv}
+
+# ============================================================================
+# BUILD CONFIGURATION
+# ============================================================================
+# Build output directory
+build.output.dir=${basedir}/build/output
+
+# Build number (override in CI/CD with ${github.run_number})
+bda.buildNumber=1
+
+# ============================================================================
+# SAG INSTALLATION (Override for different environments)
+# ============================================================================
+# SAG Home directory
+# Windows: C:/IBM/webMethods
+# Linux: /opt/softwareag
+SAGHome=C:/IBM/webMethods
+
+# ============================================================================
+# DEPLOYER CONFIGURATION (Override in CI/CD with secrets)
+# ============================================================================
+# Deployer host (override per environment)
+config.deployer.deployerHost=localhost
+
+# Deployer port
+config.deployer.deployerPort=5555
+
+# Deployer credentials (NEVER commit actual credentials)
+# Use GitHub Secrets or environment variables in CI/CD
+config.deployer.deployerUsername=Administrator
+config.deployer.deployerPassword=manage
+
+# ============================================================================
+# DEPLOYMENT OPTIONS
+# ============================================================================
+# Split deployment sets
+config.deployer.splitDeploymentSets=false
+
+# Deployment timeout (milliseconds)
+config.deployer.timeout=300000
+
+# ============================================================================
+# TEST CONFIGURATION
+# ============================================================================
+# Skip tests during build
+skip.tests=false
+
+# Test results directory
+test.results.dir=${basedir}/tests/results
+
+# ============================================================================
+# ADDITIONAL PROPERTIES
+# ============================================================================
+# Add any project-specific properties below
+# Example:
+# custom.property.name=value

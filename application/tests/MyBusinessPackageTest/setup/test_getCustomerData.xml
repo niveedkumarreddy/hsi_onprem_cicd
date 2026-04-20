@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TestSuite name="MyBusinessPackageTest" time="0">
+  <TestCase name="test_getCustomerData_ValidInput" time="0">
+    <Description>Test getCustomerData service with valid customer ID</Description>
+    
+    <!-- Setup: Define input -->
+    <Setup>
+      <SetupStep name="SetInput">
+        <Service>pub.flow:setValues</Service>
+        <Input>
+          <IDataXMLCoder version="1.0">
+            <record javaclass="com.wm.data.ISMemDataImpl">
+              <value name="key">customerId</value>
+              <value name="value">CUST001</value>
+            </record>
+          </IDataXMLCoder>
+        </Input>
+      </SetupStep>
+    </Setup>
+    
+    <!-- Execute: Call the service -->
+    <Execute>
+      <Service>mycompany.services.example:getCustomerData</Service>
+      <Input>
+        <IDataXMLCoder version="1.0">
+          <record javaclass="com.wm.data.ISMemDataImpl">
+            <value name="customerId">CUST001</value>
+          </record>
+        </IDataXMLCoder>
+      </Input>
+    </Execute>
+    
+    <!-- Assert: Verify output -->
+    <Assert>
+      <AssertStep name="CheckCustomerName">
+        <Condition>
+          <Field name="customerName"/>
+          <Operator>isNotNull</Operator>
+        </Condition>
+      </AssertStep>
+      
+      <AssertStep name="CheckCustomerEmail">
+        <Condition>
+          <Field name="customerEmail"/>
+          <Operator>isNotNull</Operator>
+        </Condition>
+      </AssertStep>
+      
+      <AssertStep name="CheckStatus">
+        <Condition>
+          <Field name="status"/>
+          <Operator>equals</Operator>
+          <Value>Active</Value>
+        </Condition>
+      </AssertStep>
+    </Assert>
+    
+    <!-- Cleanup -->
+    <Cleanup>
+      <CleanupStep name="ClearPipeline">
+        <Service>pub.flow:clearPipeline</Service>
+      </CleanupStep>
+    </Cleanup>
+  </TestCase>
+  
+  <TestCase name="test_getCustomerData_EmptyInput" time="0">
+    <Description>Test getCustomerData service with empty customer ID</Description>
+    
+    <!-- Execute: Call the service with empty input -->
+    <Execute>
+      <Service>mycompany.services.example:getCustomerData</Service>
+      <Input>
+        <IDataXMLCoder version="1.0">
+          <record javaclass="com.wm.data.ISMemDataImpl">
+            <value name="customerId"></value>
+          </record>
+        </IDataXMLCoder>
+      </Input>
+    </Execute>
+    
+    <!-- Assert: Service should still return data (or handle gracefully) -->
+    <Assert>
+      <AssertStep name="CheckOutputExists">
+        <Condition>
+          <Field name="customerName"/>
+          <Operator>isNotNull</Operator>
+        </Condition>
+      </AssertStep>
+    </Assert>
+    
+    <!-- Cleanup -->
+    <Cleanup>
+      <CleanupStep name="ClearPipeline">
+        <Service>pub.flow:clearPipeline</Service>
+      </CleanupStep>
+    </Cleanup>
+  </TestCase>
+  
+  <TestCase name="test_getCustomerData_Performance" time="0">
+    <Description>Test getCustomerData service performance</Description>
+    
+    <!-- Execute: Call the service -->
+    <Execute>
+      <Service>mycompany.services.example:getCustomerData</Service>
+      <Input>
+        <IDataXMLCoder version="1.0">
+          <record javaclass="com.wm.data.ISMemDataImpl">
+            <value name="customerId">CUST999</value>
+          </record>
+        </IDataXMLCoder>
+      </Input>
+    </Execute>
+    
+    <!-- Assert: Check response time -->
+    <Assert>
+      <AssertStep name="CheckResponseTime">
+        <Condition>
+          <ExecutionTime/>
+          <Operator>lessThan</Operator>
+          <Value>1000</Value> <!-- milliseconds -->
+        </Condition>
+      </AssertStep>
+    </Assert>
+    
+    <!-- Cleanup -->
+    <Cleanup>
+      <CleanupStep name="ClearPipeline">
+        <Service>pub.flow:clearPipeline</Service>
+      </CleanupStep>
+    </Cleanup>
+  </TestCase>
+</TestSuite>
+
+<!-- Made with Bob -->

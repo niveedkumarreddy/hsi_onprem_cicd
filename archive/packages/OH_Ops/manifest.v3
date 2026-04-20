@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Values version="2.0">
+  <value name="enabled">yes</value>
+  <value name="system_package">no</value>
+  <record name="startup_services" javaclass="com.wm.util.Values">
+    <null name="oh.ops.pub.tn:deleteSchedulerEntries"/>
+  </record>
+  <null name="shutdown_services"/>
+  <null name="replication_services"/>
+  <record name="requires" javaclass="com.wm.util.Values">
+    <value name="WmTN">*</value>
+  </record>
+  <value name="listACL">Default</value>
+  <value name="webappLoad">yes</value>
+  <value name="name">OH_Ops</value>
+  <value name="description">OH_OPS_</value>
+  <value name="jvm_version">1.8.0_292</value>
+  <null name="publisher"/>
+  <value name="patch_nums"></value>
+  <value name="time">2021-12-27 16:41:02 CET</value>
+  <value name="version">1.0</value>
+  <value name="build">1.0.25</value>
+</Values>

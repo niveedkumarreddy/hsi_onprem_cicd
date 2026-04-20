@@ -1,0 +1,4 @@
+[submodule ".cicd"]
+	path = .cicd
+	url = https://github.com/your-org/webmethods-cicd-framework.git
+	branch = main
