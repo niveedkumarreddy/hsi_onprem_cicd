@@ -44,29 +44,16 @@
     <target name="test.run">
         <echo message="=== Running WmTestSuite Tests ==="/>
         
-        <!-- Parse ENV.groovy to get test servers -->
-        <script language="groovy">
-            <![CDATA[
-            import groovy.xml.MarkupBuilder
-            
-            def configSlurper = new ConfigSlurper(properties.'bda.targetEnv')
-            def config = configSlurper.parse(new File(properties.'environmentsDefinition').toURI().toURL())
-            
-            // Get first Integration Server for testing
-            def testServer = config.IntegrationServers?.values()?.first()
-            
-            if (testServer) {
-                properties.'test.server.host' = testServer.host
-                properties.'test.server.port' = testServer.port
-                properties.'test.server.user' = testServer.username
-                properties.'test.server.pwd' = testServer.pwd
-                
-                println "Test Server: ${testServer.host}:${testServer.port}"
-            } else {
-                throw new Exception("No Integration Server found in ${properties.'bda.targetEnv'} environment")
-            }
-            ]]>
-        </script>
+        <!-- Load environment-specific properties for test server -->
+        <property file="${basedir}/deployer/environments/${bda.targetEnv}.properties"/>
+        
+        <!-- Set test server properties from environment config -->
+        <property name="test.server.host" value="${IS_HOST}"/>
+        <property name="test.server.port" value="${IS_PORT}"/>
+        <property name="test.server.user" value="${IS_USERNAME}"/>
+        <property name="test.server.pwd" value="${IS_PASSWORD}"/>
+        
+        <echo message="Test Server: ${test.server.host}:${test.server.port}"/>
         
         <!-- Execute tests using custom test runner -->
         <antcall target="test.executeTests"/>
@@ -100,7 +87,10 @@
         <property name="test.result.file" value="${config.test.reportDir}/TEST-${test.package.parent}-${test.filename}.xml"/>
         
         <!-- Execute test via HTTP call to WmTestSuite -->
-        <exec executable="curl" failonerror="false" output="${test.result.file}">
+        <exec executable="curl"
+              failonerror="false"
+              resultproperty="test.exit.code"
+              output="${test.result.file}">
             <arg value="-X"/>
             <arg value="POST"/>
             <arg value="-u"/>
@@ -112,7 +102,22 @@
             <arg value="http://${test.server.host}:${test.server.port}/invoke/wm.server.test/executeTestSuite"/>
         </exec>
         
+        <!-- Check test execution result -->
+        <condition property="test.failed">
+            <not>
+                <equals arg1="${test.exit.code}" arg2="0"/>
+            </not>
+        </condition>
+        
         <echo message="Test result saved: ${test.result.file}"/>
+        <echo message="Test exit code: ${test.exit.code}"/>
+        
+        <!-- Fail build if configured to do so -->
+        <fail if="test.failed" message="Test execution failed: ${test.file}">
+            <condition>
+                <istrue value="${config.test.failBuildOnTestError}"/>
+            </condition>
+        </fail>
     </target>
     
     <!-- Generate Test Report -->

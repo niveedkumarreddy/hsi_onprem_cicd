@@ -1,11 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project name="webMethods-CICD" default="buildDeployTest" basedir="..">
     
-    <!-- Load properties file - command-line -D has highest precedence -->
-    <!-- If not specified via -D, default to build.properties -->
-    <property name="project.properties" value="build.properties"/>
-    <!-- Load ONLY the specified properties file (not both) -->
+    <!-- Load properties files in order - command-line -D has highest precedence -->
+    <!-- 1. Load standard SAG DevOps build.properties (reference) -->
+    <property file="${basedir}/build.properties"/>
+    
+    <!-- 2. Load custom project-specific properties (overrides standard) -->
+    <property file="${basedir}/custom.properties"/>
+    
+    <!-- 3. Load workflow-generated properties if specified (highest priority) -->
+    <property name="project.properties" value=""/>
     <property file="${basedir}/${project.properties}"/>
+    
     <property name="cicd.home" value="${basedir}/cicd"/>
     
     <!-- Import sub-build files -->

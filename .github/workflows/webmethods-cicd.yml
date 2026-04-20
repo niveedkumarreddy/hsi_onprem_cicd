@@ -96,9 +96,6 @@ jobs:
           
           # ABE Configuration
           config.build.abeHome=$SAG_HOME_UNIX/common/AssetBuildEnvironment
-          
-          # Environment Definition
-          environmentsDefinition=$WORKSPACE/ENV.groovy
           "@ | Out-File -FilePath build.properties -Encoding UTF8
           
           Write-Host "Build properties created:"
@@ -424,10 +421,7 @@ jobs:
           # Variable Substitution
           config.deployer.doVarSub=true
           varsubDir=${{ github.workspace }}/varsub
-          config.deployer.splitDelpoymentSets=false
-          
-          # Environment Definition
-          environmentsDefinition=${{ github.workspace }}/ENV.groovy
+          config.deployer.splitDeploymentSets=false
           
           # Temp Directory
           config.tmpdir=tmp
@@ -481,7 +475,6 @@ jobs:
           isTestDir=$WORKSPACE/tests
           config.test.reportDir=$WORKSPACE/report
           config.test.failBuildOnTestError=true
-          environmentsDefinition=$WORKSPACE/ENV.groovy
           config.build.abeHome=$env:SAG_HOME/common/AssetBuildEnvironment
           "@ | Out-File -FilePath test.properties -Encoding UTF8
       
@@ -544,20 +537,33 @@ jobs:
           $WORKSPACE = "${{ github.workspace }}".Replace('\', '/')
           
           @"
+          # Deployment Configuration for TEST
+          
+          # Software AG Installation
+          SAGHome=$env:SAG_HOME
+          
           bda.targetEnv=TEST
           bda.projectName=$env:PROJECT_NAME
           bda.buildNumber=${{ github.run_number }}
+          
+          # Repository Configuration (must match build output)
           fbrRepoName=$env:PROJECT_NAME`_${{ github.run_number }}
           fbrRepoDir=$WORKSPACE/tmp/fbr/$env:PROJECT_NAME`_${{ github.run_number }}
+          
+          # Deployer Configuration
           config.deployer.deployerInstallationPath=$env:SAG_HOME/IntegrationServer/instances/default/packages/WmDeployer/bin
           config.deployer.deployerHost=${{ secrets.DEPLOYER_HOST }}
           config.deployer.deployerPort=${{ secrets.DEPLOYER_PORT }}
           config.deployer.deployerUsername=${{ secrets.DEPLOYER_USERNAME }}
           config.deployer.deployerPassword=${{ secrets.DEPLOYER_PASSWORD }}
           config.deployer.projectNamePrefix=TEST_${{ matrix.server }}_${{ github.run_number }}
+          
+          # Variable Substitution
           config.deployer.doVarSub=true
           varsubDir=$WORKSPACE/varsub
-          environmentsDefinition=$WORKSPACE/ENV.groovy
+          config.deployer.splitDeploymentSets=false
+          
+          # Temp Directory
           config.tmpdir=tmp
           "@ | Out-File -FilePath deploy-test-${{ matrix.server }}.properties -Encoding UTF8
           
@@ -591,7 +597,6 @@ jobs:
           isTestDir=$WORKSPACE/tests
           config.test.reportDir=$WORKSPACE/report
           config.test.failBuildOnTestError=true
-          environmentsDefinition=$WORKSPACE/ENV.groovy
           config.build.abeHome=$env:SAG_HOME/common/AssetBuildEnvironment
           "@ | Out-File -FilePath test-test.properties -Encoding UTF8
           
@@ -651,20 +656,33 @@ jobs:
           $WORKSPACE = "${{ github.workspace }}".Replace('\', '/')
           
           @"
+          # Deployment Configuration for PROD
+          
+          # Software AG Installation
+          SAGHome=$env:SAG_HOME
+          
           bda.targetEnv=PROD
           bda.projectName=$env:PROJECT_NAME
           bda.buildNumber=${{ github.run_number }}
+          
+          # Repository Configuration (must match build output)
           fbrRepoName=$env:PROJECT_NAME`_${{ github.run_number }}
           fbrRepoDir=$WORKSPACE/tmp/fbr/$env:PROJECT_NAME`_${{ github.run_number }}
+          
+          # Deployer Configuration
           config.deployer.deployerInstallationPath=$env:SAG_HOME/IntegrationServer/instances/default/packages/WmDeployer/bin
           config.deployer.deployerHost=${{ secrets.DEPLOYER_HOST }}
           config.deployer.deployerPort=${{ secrets.DEPLOYER_PORT }}
           config.deployer.deployerUsername=${{ secrets.DEPLOYER_USERNAME }}
           config.deployer.deployerPassword=${{ secrets.DEPLOYER_PASSWORD }}
           config.deployer.projectNamePrefix=PROD_${{ matrix.server }}_${{ github.run_number }}
+          
+          # Variable Substitution
           config.deployer.doVarSub=true
           varsubDir=$WORKSPACE/varsub
-          environmentsDefinition=$WORKSPACE/ENV.groovy
+          config.deployer.splitDeploymentSets=false
+          
+          # Temp Directory
           config.tmpdir=tmp
           "@ | Out-File -FilePath deploy-prod-${{ matrix.server }}.properties -Encoding UTF8
           

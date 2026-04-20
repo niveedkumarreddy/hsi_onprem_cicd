@@ -54,6 +54,8 @@
                 <Property name="concurrentDeployment">true</Property>
                 <Property name="ignoreMissingDependencies">true</Property>
                 <Property name="isTransactionalDeployment">true</Property>
+                <Property name="enableVarSub">@DO_VARSUB@</Property>
+                <Property name="varSubDir">@VARSUB_DIR@</Property>
             </ProjectProperties>
             
             <!-- Deployment Set (Define phase) -->

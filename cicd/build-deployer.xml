@@ -111,8 +111,8 @@
         
         <property name="deployer.full.path" value="${config.deployer.deployerInstallationPath}/${deployer.exe}"/>
         <property name="deployer.log.file" value="${config.deployer.deployerInstallationPath}/../logs/Deployer.log"/>
-        <!-- Project name must match ProjectAutomator: projectPrefix + projectName_buildNumber -->
-        <property name="project.full.name" value="${bda.targetEnv}${bda.projectName}_${bda.buildNumber}"/>
+        <!-- Project name must match ProjectAutomator: PROJECT_PREFIX_projectName_buildNumber -->
+        <property name="project.full.name" value="${PROJECT_PREFIX}_${bda.projectName}_${bda.buildNumber}"/>
         
         <echo message="Executing: ${deployer.full.path}"/>
         <echo message="Project: ${project.full.name}"/>
@@ -160,9 +160,7 @@
     <target name="deployer.verify">
         <echo message="=== Verifying Deployment ==="/>
         
-        <!-- Load environment properties for verification -->
-        <property file="${basedir}/deployer/environments/${bda.targetEnv}.properties"/>
-        
+        <!-- Environment properties already loaded in deployer.generatePA -->
         <echo message="Deployment targets:"/>
         <echo message="  - ${TARGET_ENV}_IS: ${IS_HOST}:${IS_PORT}"/>
         <echo message="  - ${TARGET_ENV}_UM: ${UM_HOST}:${UM_PORT}"/>

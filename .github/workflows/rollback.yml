@@ -111,20 +111,33 @@ jobs:
         shell: powershell
         run: |
           @"
+          # Rollback Configuration for TEST
+          
+          # Software AG Installation
+          SAGHome=$env:SAG_HOME
+          
           bda.targetEnv=TEST
           bda.projectName=$env:PROJECT_NAME
           bda.buildNumber=${{ github.event.inputs.build_number }}
+          
+          # Repository Configuration
           fbrRepoName=$env:PROJECT_NAME`_${{ github.event.inputs.build_number }}
           fbrRepoDir=${{ github.workspace }}/tmp/fbr/$env:PROJECT_NAME`_${{ github.event.inputs.build_number }}
+          
+          # Deployer Configuration
           config.deployer.deployerInstallationPath=$env:SAG_HOME/IntegrationServer/instances/default/packages/WmDeployer/bin
           config.deployer.deployerHost=${{ secrets.DEPLOYER_HOST }}
           config.deployer.deployerPort=${{ secrets.DEPLOYER_PORT }}
           config.deployer.deployerUsername=${{ secrets.DEPLOYER_USERNAME }}
           config.deployer.deployerPassword=${{ secrets.DEPLOYER_PASSWORD }}
           config.deployer.projectNamePrefix=ROLLBACK_TEST_${{ matrix.server }}_${{ github.event.inputs.build_number }}
+          
+          # Variable Substitution
           config.deployer.doVarSub=true
           varsubDir=${{ github.workspace }}/varsub
-          environmentsDefinition=${{ github.workspace }}/ENV.groovy
+          config.deployer.splitDeploymentSets=false
+          
+          # Temp Directory
           config.tmpdir=tmp
           "@ | Out-File -FilePath rollback-test-${{ matrix.server }}.properties -Encoding UTF8
           
@@ -200,20 +213,33 @@ jobs:
         shell: powershell
         run: |
           @"
+          # Rollback Configuration for PROD
+          
+          # Software AG Installation
+          SAGHome=$env:SAG_HOME
+          
           bda.targetEnv=PROD
           bda.projectName=$env:PROJECT_NAME
           bda.buildNumber=${{ github.event.inputs.build_number }}
+          
+          # Repository Configuration
           fbrRepoName=$env:PROJECT_NAME`_${{ github.event.inputs.build_number }}
           fbrRepoDir=${{ github.workspace }}/tmp/fbr/$env:PROJECT_NAME`_${{ github.event.inputs.build_number }}
+          
+          # Deployer Configuration
           config.deployer.deployerInstallationPath=$env:SAG_HOME/IntegrationServer/instances/default/packages/WmDeployer/bin
           config.deployer.deployerHost=${{ secrets.DEPLOYER_HOST }}
           config.deployer.deployerPort=${{ secrets.DEPLOYER_PORT }}
           config.deployer.deployerUsername=${{ secrets.DEPLOYER_USERNAME }}
           config.deployer.deployerPassword=${{ secrets.DEPLOYER_PASSWORD }}
           config.deployer.projectNamePrefix=ROLLBACK_PROD_${{ matrix.server }}_${{ github.event.inputs.build_number }}
+          
+          # Variable Substitution
           config.deployer.doVarSub=true
           varsubDir=${{ github.workspace }}/varsub
-          environmentsDefinition=${{ github.workspace }}/ENV.groovy
+          config.deployer.splitDeploymentSets=false
+          
+          # Temp Directory
           config.tmpdir=tmp
           "@ | Out-File -FilePath rollback-prod-${{ matrix.server }}.properties -Encoding UTF8
           
@@ -259,7 +285,6 @@ jobs:
           isTestDir=${{ github.workspace }}/tests
           config.test.reportDir=${{ github.workspace }}/report
           config.test.failBuildOnTestError=false
-          environmentsDefinition=${{ github.workspace }}/ENV.groovy
           config.build.abeHome=$env:SAG_HOME/common/AssetBuildEnvironment
           "@ | Out-File -FilePath test-rollback.properties -Encoding UTF8
           
