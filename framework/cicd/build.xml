@@ -8,16 +8,8 @@
     <!-- 2. Load custom project-specific properties (overrides standard) -->
     <property file="${basedir}/custom.properties"/>
     
-    <!-- 3. Load workflow-generated properties if specified (highest priority) -->
-    <property name="project.properties" value=""/>
-    <condition property="project.properties.exists">
-        <and>
-            <isset property="project.properties"/>
-            <not><equals arg1="${project.properties}" arg2=""/></not>
-            <available file="${basedir}/${project.properties}"/>
-        </and>
-    </condition>
-    <property file="${basedir}/${project.properties}" if:set="project.properties.exists"/>
+    <!-- 3. Load workflow-generated properties if specified via -Dproject.properties=filename -->
+    <!-- Note: This is optional and only loads if the property is set via command line -->
     
     <property name="cicd.home" value="${basedir}/cicd"/>
     
