@@ -10,7 +10,14 @@
     
     <!-- 3. Load workflow-generated properties if specified (highest priority) -->
     <property name="project.properties" value=""/>
-    <property file="${basedir}/${project.properties}"/>
+    <condition property="project.properties.exists">
+        <and>
+            <isset property="project.properties"/>
+            <not><equals arg1="${project.properties}" arg2=""/></not>
+            <available file="${basedir}/${project.properties}"/>
+        </and>
+    </condition>
+    <property file="${basedir}/${project.properties}" if:set="project.properties.exists"/>
     
     <property name="cicd.home" value="${basedir}/cicd"/>
     
