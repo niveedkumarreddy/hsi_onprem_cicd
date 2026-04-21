@@ -131,7 +131,7 @@ jobs:
           
           # ABE Output Directory (ABE writes IS artifacts here)
           build.output.dir=$WORKSPACE/build
-          abe.output.dir=${'$'}{build.output.dir}/IS
+          abe.output.dir=$WORKSPACE/build/IS
           "@ | Out-File -FilePath framework/build.properties -Encoding UTF8
           
           Write-Host "Build properties created at: framework/build.properties"
