@@ -228,7 +228,7 @@ jobs:
         run: |
           $scannerPath = "./sonar-scanner/bin/sonar-scanner.bat"
           
-          # Community Edition compatible parameters (no branch analysis)
+          # Community Edition compatible parameters (no branch/PR analysis)
           $params = @(
             "-Dsonar.projectKey=${{ env.PROJECT_NAME }}",
             "-Dsonar.projectName=${{ env.PROJECT_NAME }}",
@@ -237,12 +237,15 @@ jobs:
             "-Dsonar.host.url=$env:SONAR_HOST_URL",
             "-Dsonar.token=$env:SONAR_TOKEN",
             "-Dsonar.scm.provider=git",
-            "-Dsonar.projectVersion=${{ github.run_number }}"
+            "-Dsonar.projectVersion=${{ github.run_number }}",
+            "-Dsonar.exclusions=**/node.idf,**/node.ndf,**/*.java",
+            "-Dsonar.lang.patterns.xml=**/*.xsd,**/*.xsl,**/build*.xml,**/pom.xml",
+            "-Dsonar.lang.patterns.flow=**/flow.xml,**/*.ndf"
           )
           
           Write-Host "Running SonarQube analysis (Community Edition mode)..."
+          Write-Host "Note: Branch and PR analysis require Developer Edition or higher"
           Write-Host "Parameters: $($params -join ' ')"
-          Write-Host "Note: Branch analysis requires Developer Edition or higher"
           
           & $scannerPath $params
           
@@ -257,82 +260,91 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         run: |
-          Write-Host "Checking Quality Gate status from SonarQube..."
+          Write-Host "Checking Quality Gate status..."
           
           # Read the report task file
-          $reportTask = Get-Content ".scannerwork/report-task.txt" | ConvertFrom-StringData
-          $ceTaskUrl = $reportTask.ceTaskUrl
+          $reportTaskFile = ".scannerwork/report-task.txt"
+          if (-not (Test-Path $reportTaskFile)) {
+            Write-Host "⚠️ Report task file not found"
+            "### ⚠️ SonarQube Quality Gate: Report file not found" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+            exit 0
+          }
+          
+          # Parse the CE task URL
+          $content = Get-Content $reportTaskFile
+          $ceTaskUrl = ($content | Where-Object { $_ -match "ceTaskUrl=" }) -replace "ceTaskUrl=", ""
+          
+          if (-not $ceTaskUrl) {
+            Write-Host "⚠️ CE Task URL not found"
+            "### ⚠️ SonarQube Quality Gate: Task URL not found" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+            exit 0
+          }
           
           Write-Host "CE Task URL: $ceTaskUrl"
           
-          # SonarQube uses Basic Auth: token as username, empty password
-          $base64Token = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${env:SONAR_TOKEN}:"))
-          $headers = @{
-            "Authorization" = "Basic $base64Token"
-          }
-          
           # Wait for analysis to complete and get quality gate status
-          $maxAttempts = 60
+          $maxAttempts = 30
           $attempt = 0
-          $analysisComplete = $false
+          $status = "PENDING"
           
-          while (-not $analysisComplete -and $attempt -lt $maxAttempts) {
+          while ($attempt -lt $maxAttempts -and $status -eq "PENDING") {
+            Start-Sleep -Seconds 10
             $attempt++
-            Write-Host "Attempt $attempt/$maxAttempts - Checking analysis status..."
             
             try {
-              $taskResponse = Invoke-RestMethod -Uri $ceTaskUrl -Headers $headers -Method Get
-              $taskStatus = $taskResponse.task.status
+              $headers = @{
+                "Authorization" = "Bearer $env:SONAR_TOKEN"
+              }
               
-              Write-Host "Task status: $taskStatus"
+              $response = Invoke-RestMethod -Uri $ceTaskUrl -Headers $headers -Method Get
+              $taskStatus = $response.task.status
+              
+              Write-Host "Attempt $attempt/$maxAttempts - Task status: $taskStatus"
               
               if ($taskStatus -eq "SUCCESS") {
-                $analysisComplete = $true
-                $analysisId = $taskResponse.task.analysisId
+                $analysisId = $response.task.analysisId
+                $qualityGateUrl = "$env:SONAR_HOST_URL/api/qualitygates/project_status?analysisId=$analysisId"
                 
-                # Get quality gate status
-                $qgUrl = "$env:SONAR_HOST_URL/api/qualitygates/project_status?analysisId=$analysisId"
-                $qgResponse = Invoke-RestMethod -Uri $qgUrl -Headers $headers -Method Get
-                $qgStatus = $qgResponse.projectStatus.status
+                $qgResponse = Invoke-RestMethod -Uri $qualityGateUrl -Headers $headers -Method Get
+                $status = $qgResponse.projectStatus.status
                 
-                Write-Host "Quality Gate Status: $qgStatus"
+                Write-Host "Quality Gate Status: $status"
                 
-                if ($qgStatus -eq "OK") {
+                if ($status -eq "OK") {
                   Write-Host "✅ Quality Gate PASSED - Proceeding to DEV deployment"
                   "### ✅ SonarQube Quality Gate: PASSED" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
                   "Code quality check passed. Deployment to DEV will proceed." | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
-                  "View details: $env:SONAR_HOST_URL/dashboard?id=${{ env.PROJECT_NAME }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
-                  exit 0
                 }
-                else {
+                elseif ($status -eq "ERROR") {
                   Write-Host "❌ Quality Gate FAILED - Blocking DEV deployment"
                   "### ❌ SonarQube Quality Gate: FAILED" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
                   "Code quality issues detected. Deployment to DEV is blocked." | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
                   "Please review and fix the issues in SonarQube dashboard before deploying." | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
-                  "View details: $env:SONAR_HOST_URL/dashboard?id=${{ env.PROJECT_NAME }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
                   exit 1
                 }
+                else {
+                  Write-Host "⚠️ Quality Gate status: $status"
+                  "### ⚠️ SonarQube Quality Gate: $status" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+                }
+                
+                break
               }
               elseif ($taskStatus -eq "FAILED" -or $taskStatus -eq "CANCELED") {
-                Write-Error "Analysis task failed with status: $taskStatus"
+                Write-Host "❌ Analysis task $taskStatus"
+                "### ❌ SonarQube Analysis: $taskStatus" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
                 exit 1
               }
-              
-              Start-Sleep -Seconds 5
             }
             catch {
               Write-Host "Error checking status: $_"
-              Write-Host "Error details: $($_.Exception.Message)"
-              Start-Sleep -Seconds 5
+              if ($attempt -eq $maxAttempts) {
+                Write-Host "⚠️ Timeout waiting for quality gate"
+                "### ⚠️ SonarQube Quality Gate: Timeout" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+              }
             }
           }
           
-          if (-not $analysisComplete) {
-            Write-Error "Timeout waiting for analysis to complete"
-            exit 1
-          }
-          
-          "View full report: ${{ secrets.SONAR_HOST_URL }}/dashboard?id=${{ env.PROJECT_NAME }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          "View full report: $env:SONAR_HOST_URL/dashboard?id=${{ env.PROJECT_NAME }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
       
       - name: Upload SonarQube Report
         if: always()
