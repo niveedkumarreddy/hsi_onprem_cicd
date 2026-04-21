@@ -96,35 +96,94 @@ jobs:
             exit $LASTEXITCODE
           }
       
-      - name: Wait for Quality Gate
-        uses: sonarsource/sonarqube-quality-gate-action@master
-        timeout-minutes: 5
+      - name: Check Quality Gate (PowerShell)
+        shell: powershell
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-        continue-on-error: true
-        id: quality-gate
-      
-      - name: Quality Gate Status
-        shell: powershell
         run: |
-          $status = "${{ steps.quality-gate.outputs.quality-gate-status }}"
+          Write-Host "Checking Quality Gate status..."
           
-          if ($status -eq "PASSED") {
-            Write-Host "✅ Quality Gate PASSED"
-            "### ✅ SonarQube Quality Gate: PASSED" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
-          }
-          elseif ($status -eq "FAILED") {
-            Write-Host "❌ Quality Gate FAILED"
-            "### ❌ SonarQube Quality Gate: FAILED" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
-            "Please review the issues in SonarQube dashboard" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
-          }
-          else {
-            Write-Host "⚠️ Quality Gate status: $status"
-            "### ⚠️ SonarQube Quality Gate: $status" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          # Read the report task file
+          $reportTaskFile = ".scannerwork/report-task.txt"
+          if (-not (Test-Path $reportTaskFile)) {
+            Write-Host "⚠️ Report task file not found"
+            "### ⚠️ SonarQube Quality Gate: Report file not found" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+            exit 0
           }
           
-          "View full report: ${{ secrets.SONAR_HOST_URL }}/dashboard?id=${{ env.PROJECT_NAME }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          # Parse the CE task URL
+          $content = Get-Content $reportTaskFile
+          $ceTaskUrl = ($content | Where-Object { $_ -match "ceTaskUrl=" }) -replace "ceTaskUrl=", ""
+          
+          if (-not $ceTaskUrl) {
+            Write-Host "⚠️ CE Task URL not found"
+            "### ⚠️ SonarQube Quality Gate: Task URL not found" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+            exit 0
+          }
+          
+          Write-Host "CE Task URL: $ceTaskUrl"
+          
+          # Wait for analysis to complete and get quality gate status
+          $maxAttempts = 30
+          $attempt = 0
+          $status = "PENDING"
+          
+          while ($attempt -lt $maxAttempts -and $status -eq "PENDING") {
+            Start-Sleep -Seconds 10
+            $attempt++
+            
+            try {
+              $headers = @{
+                "Authorization" = "Bearer $env:SONAR_TOKEN"
+              }
+              
+              $response = Invoke-RestMethod -Uri $ceTaskUrl -Headers $headers -Method Get
+              $taskStatus = $response.task.status
+              
+              Write-Host "Attempt $attempt/$maxAttempts - Task status: $taskStatus"
+              
+              if ($taskStatus -eq "SUCCESS") {
+                $analysisId = $response.task.analysisId
+                $qualityGateUrl = "$env:SONAR_HOST_URL/api/qualitygates/project_status?analysisId=$analysisId"
+                
+                $qgResponse = Invoke-RestMethod -Uri $qualityGateUrl -Headers $headers -Method Get
+                $status = $qgResponse.projectStatus.status
+                
+                Write-Host "Quality Gate Status: $status"
+                
+                if ($status -eq "OK") {
+                  Write-Host "✅ Quality Gate PASSED"
+                  "### ✅ SonarQube Quality Gate: PASSED" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+                }
+                elseif ($status -eq "ERROR") {
+                  Write-Host "❌ Quality Gate FAILED"
+                  "### ❌ SonarQube Quality Gate: FAILED" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+                  "Please review the issues in SonarQube dashboard" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+                }
+                else {
+                  Write-Host "⚠️ Quality Gate status: $status"
+                  "### ⚠️ SonarQube Quality Gate: $status" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+                }
+                
+                break
+              }
+              elseif ($taskStatus -eq "FAILED" -or $taskStatus -eq "CANCELED") {
+                Write-Host "❌ Analysis task $taskStatus"
+                "### ❌ SonarQube Analysis: $taskStatus" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+                break
+              }
+            }
+            catch {
+              Write-Host "Error checking status: $_"
+              if ($attempt -eq $maxAttempts) {
+                Write-Host "⚠️ Timeout waiting for quality gate"
+                "### ⚠️ SonarQube Quality Gate: Timeout" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+              }
+            }
+          }
+          
+          "View full report: $env:SONAR_HOST_URL/dashboard?id=${{ env.PROJECT_NAME }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
       
       - name: Upload SonarQube Report
         if: always()
@@ -134,32 +193,5 @@ jobs:
           path: .scannerwork/report-task.txt
           retention-days: 30
       
-      - name: Comment PR with Results
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const status = '${{ steps.quality-gate.outputs.quality-gate-status }}';
-            const icon = status === 'PASSED' ? '✅' : '❌';
-            const sonarUrl = '${{ secrets.SONAR_HOST_URL }}';
-            const projectKey = '${{ env.PROJECT_NAME }}';
-            const prNumber = '${{ github.event.pull_request.number }}';
-            
-            const comment = `## ${icon} SonarQube Analysis Results
-            
-            **Quality Gate:** ${status}
-            
-            📊 [View Full Report](${sonarUrl}/dashboard?id=${projectKey}&pullRequest=${prNumber})
-            
-            ${status === 'FAILED' ? '⚠️ Please fix the issues before merging.' : ''}
-            `;
-            
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: comment
-            });
 
 # Made with Bob
