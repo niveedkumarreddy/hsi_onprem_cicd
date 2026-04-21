@@ -126,8 +126,8 @@ jobs:
           
           # Deployer Configuration
           config.deployer.deployerInstallationPath=$env:SAG_HOME/IntegrationServer/instances/default/packages/WmDeployer/bin
-          config.deployer.deployerHost=${{ secrets.DEPLOYER_HOST }}
-          config.deployer.deployerPort=${{ secrets.DEPLOYER_PORT }}
+          config.deployer.deployerHost=${{ vars.DEPLOYER_HOST }}
+          config.deployer.deployerPort=${{ vars.DEPLOYER_PORT }}
           config.deployer.deployerUsername=${{ secrets.DEPLOYER_USERNAME }}
           config.deployer.deployerPassword=${{ secrets.DEPLOYER_PASSWORD }}
           config.deployer.projectNamePrefix=ROLLBACK_TEST_${{ matrix.server }}_${{ github.event.inputs.build_number }}
@@ -228,8 +228,8 @@ jobs:
           
           # Deployer Configuration
           config.deployer.deployerInstallationPath=$env:SAG_HOME/IntegrationServer/instances/default/packages/WmDeployer/bin
-          config.deployer.deployerHost=${{ secrets.DEPLOYER_HOST }}
-          config.deployer.deployerPort=${{ secrets.DEPLOYER_PORT }}
+          config.deployer.deployerHost=${{ vars.DEPLOYER_HOST }}
+          config.deployer.deployerPort=${{ vars.DEPLOYER_PORT }}
           config.deployer.deployerUsername=${{ secrets.DEPLOYER_USERNAME }}
           config.deployer.deployerPassword=${{ secrets.DEPLOYER_PASSWORD }}
           config.deployer.projectNamePrefix=ROLLBACK_PROD_${{ matrix.server }}_${{ github.event.inputs.build_number }}

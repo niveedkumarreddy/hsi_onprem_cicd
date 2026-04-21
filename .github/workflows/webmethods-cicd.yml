@@ -466,7 +466,7 @@ jobs:
       - name: Validate Required Secrets
         shell: powershell
         env:
-          DEPLOYER_HOST: ${{ secrets.DEPLOYER_HOST }}
+          DEPLOYER_HOST: ${{ vars.DEPLOYER_HOST }}
           DEPLOYER_USERNAME: ${{ secrets.DEPLOYER_USERNAME }}
           DEPLOYER_PASSWORD: ${{ secrets.DEPLOYER_PASSWORD }}
         run: |
@@ -504,8 +504,8 @@ jobs:
           
           # Deployer Configuration
           config.deployer.deployerInstallationPath=$env:SAG_HOME/IntegrationServer/instances/default/packages/WmDeployer/bin
-          config.deployer.deployerHost=${{ secrets.DEPLOYER_HOST || 'localhost' }}
-          config.deployer.deployerPort=${{ secrets.DEPLOYER_PORT || '5555' }}
+          config.deployer.deployerHost=${{ vars.DEPLOYER_HOST || 'localhost' }}
+          config.deployer.deployerPort=${{ vars.DEPLOYER_PORT || '5555' }}
           config.deployer.deployerUsername=${{ secrets.DEPLOYER_USERNAME || 'Administrator' }}
           config.deployer.deployerPassword=${{ secrets.DEPLOYER_PASSWORD || 'manage' }}
           config.deployer.projectNamePrefix=DEV_${{ github.run_number }}
@@ -525,8 +525,8 @@ jobs:
       - name: Deploy to DEV Server
         shell: powershell
         env:
-          DEPLOYER_HOST: ${{ secrets.DEPLOYER_HOST }}
-          DEPLOYER_PORT: ${{ secrets.DEPLOYER_PORT }}
+          DEPLOYER_HOST: ${{ vars.DEPLOYER_HOST }}
+          DEPLOYER_PORT: ${{ vars.DEPLOYER_PORT }}
         run: |
           # Add ANT to PATH
           $env:PATH = "$env:SAG_HOME/common/lib/ant/bin;$env:PATH"
@@ -622,7 +622,7 @@ jobs:
       - name: Validate Required Secrets
         shell: powershell
         env:
-          DEPLOYER_HOST: ${{ secrets.DEPLOYER_HOST }}
+          DEPLOYER_HOST: ${{ vars.DEPLOYER_HOST }}
           DEPLOYER_USERNAME: ${{ secrets.DEPLOYER_USERNAME }}
           DEPLOYER_PASSWORD: ${{ secrets.DEPLOYER_PASSWORD }}
         run: |
@@ -664,8 +664,8 @@ jobs:
           
           # Deployer Configuration
           config.deployer.deployerInstallationPath=$env:SAG_HOME/IntegrationServer/instances/default/packages/WmDeployer/bin
-          config.deployer.deployerHost=${{ secrets.DEPLOYER_HOST }}
-          config.deployer.deployerPort=${{ secrets.DEPLOYER_PORT }}
+          config.deployer.deployerHost=${{ vars.DEPLOYER_HOST }}
+          config.deployer.deployerPort=${{ vars.DEPLOYER_PORT }}
           config.deployer.deployerUsername=${{ secrets.DEPLOYER_USERNAME }}
           config.deployer.deployerPassword=${{ secrets.DEPLOYER_PASSWORD }}
           config.deployer.projectNamePrefix=TEST_${{ matrix.server }}_${{ github.run_number }}
@@ -755,7 +755,7 @@ jobs:
       - name: Validate Required Secrets
         shell: powershell
         env:
-          DEPLOYER_HOST: ${{ secrets.DEPLOYER_HOST }}
+          DEPLOYER_HOST: ${{ vars.DEPLOYER_HOST }}
           DEPLOYER_USERNAME: ${{ secrets.DEPLOYER_USERNAME }}
           DEPLOYER_PASSWORD: ${{ secrets.DEPLOYER_PASSWORD }}
         run: |
@@ -804,8 +804,8 @@ jobs:
           
           # Deployer Configuration
           config.deployer.deployerInstallationPath=$env:SAG_HOME/IntegrationServer/instances/default/packages/WmDeployer/bin
-          config.deployer.deployerHost=${{ secrets.DEPLOYER_HOST }}
-          config.deployer.deployerPort=${{ secrets.DEPLOYER_PORT }}
+          config.deployer.deployerHost=${{ vars.DEPLOYER_HOST }}
+          config.deployer.deployerPort=${{ vars.DEPLOYER_PORT }}
           config.deployer.deployerUsername=${{ secrets.DEPLOYER_USERNAME }}
           config.deployer.deployerPassword=${{ secrets.DEPLOYER_PASSWORD }}
           config.deployer.projectNamePrefix=PROD_${{ matrix.server }}_${{ github.run_number }}
