@@ -282,6 +282,39 @@ jobs:
           
           Write-Host "CE Task URL: $ceTaskUrl"
           
+          # Try Bearer token first (SonarQube 9.7+), fallback to Basic Auth
+          $authMethods = @(
+            @{ Name = "Bearer"; Headers = @{ "Authorization" = "Bearer $env:SONAR_TOKEN" } },
+            @{ Name = "Basic"; Headers = @{ "Authorization" = "Basic $([Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${env:SONAR_TOKEN}:")))" } }
+          )
+          
+          $authSuccess = $false
+          $selectedAuth = $null
+          
+          # Test authentication methods
+          foreach ($auth in $authMethods) {
+            try {
+              Write-Host "Testing $($auth.Name) authentication..."
+              $testResponse = Invoke-RestMethod -Uri $ceTaskUrl -Headers $auth.Headers -Method Get -ErrorAction Stop
+              Write-Host "✅ $($auth.Name) authentication successful"
+              $selectedAuth = $auth
+              $authSuccess = $true
+              break
+            }
+            catch {
+              Write-Host "⚠️ $($auth.Name) authentication failed: $($_.Exception.Message)"
+            }
+          }
+          
+          if (-not $authSuccess) {
+            Write-Error "❌ All authentication methods failed. Please check SONAR_TOKEN secret."
+            "### ❌ SonarQube Quality Gate: Authentication Failed" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+            "All authentication methods (Bearer and Basic) failed. Please verify SONAR_TOKEN secret." | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+            exit 1
+          }
+          
+          Write-Host "Using $($selectedAuth.Name) authentication for Quality Gate check"
+          
           # Wait for analysis to complete and get quality gate status
           $maxAttempts = 30
           $attempt = 0
@@ -292,11 +325,7 @@ jobs:
             $attempt++
             
             try {
-              $headers = @{
-                "Authorization" = "Bearer $env:SONAR_TOKEN"
-              }
-              
-              $response = Invoke-RestMethod -Uri $ceTaskUrl -Headers $headers -Method Get
+              $response = Invoke-RestMethod -Uri $ceTaskUrl -Headers $selectedAuth.Headers -Method Get
               $taskStatus = $response.task.status
               
               Write-Host "Attempt $attempt/$maxAttempts - Task status: $taskStatus"
@@ -305,7 +334,7 @@ jobs:
                 $analysisId = $response.task.analysisId
                 $qualityGateUrl = "$env:SONAR_HOST_URL/api/qualitygates/project_status?analysisId=$analysisId"
                 
-                $qgResponse = Invoke-RestMethod -Uri $qualityGateUrl -Headers $headers -Method Get
+                $qgResponse = Invoke-RestMethod -Uri $qualityGateUrl -Headers $selectedAuth.Headers -Method Get
                 $status = $qgResponse.projectStatus.status
                 
                 Write-Host "Quality Gate Status: $status"
