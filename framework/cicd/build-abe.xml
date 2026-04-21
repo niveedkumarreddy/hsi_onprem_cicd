@@ -46,15 +46,16 @@
     <target name="abe.execute">
         <echo message="=== Executing ABE Build ==="/>
         <echo message="Building packages from: ${isPackagesDir}"/>
-        <echo message="Output directory: ${fbrRepoDir}"/>
+        <echo message="Target FBR directory: ${fbrRepoDir}"/>
         
-        <!-- Call ABE - target creates FBR structure, build.output.dir writes compiled assets -->
+        <!-- Call ABE with build.output.dir override to control where ACDL files are written -->
         <exec executable="${config.build.abeHome}/bin/build.bat"
               dir="${config.build.abeHome}"
               failonerror="true"
               osfamily="windows">
             <arg value="-Dsource=${isPackagesDir}"/>
             <arg value="-Dtarget=${fbrRepoDir}"/>
+            <arg value="-Dbuild.output.dir=${fbrRepoDir}"/>
             <arg value="-Dproject.name=${bda.projectName}"/>
         </exec>
         
@@ -64,17 +65,17 @@
               osfamily="unix">
             <arg value="-Dsource=${isPackagesDir}"/>
             <arg value="-Dtarget=${fbrRepoDir}"/>
+            <arg value="-Dbuild.output.dir=${fbrRepoDir}"/>
             <arg value="-Dproject.name=${bda.projectName}"/>
         </exec>
         
         <echo message="ABE build execution completed"/>
-        <echo message="ABE artifacts written to: ${fbrRepoDir}"/>
         
-        <!-- Verify artifacts were created -->
+        <!-- Verify artifacts were created in FBR directory -->
         <available file="${fbrRepoDir}/_index" property="abe.output.exists"/>
         <fail unless="abe.output.exists" message="ABE output not found at: ${fbrRepoDir} (missing _index file)"/>
         
-        <echo message="Artifacts copied successfully to: ${fbrRepoDir}"/>
+        <echo message="ABE artifacts successfully created in: ${fbrRepoDir}"/>
     </target>
     
     <!-- Verify build output -->
