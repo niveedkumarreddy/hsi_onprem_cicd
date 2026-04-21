@@ -48,16 +48,14 @@
         <echo message="Building packages from: ${isPackagesDir}"/>
         <echo message="Output directory: ${fbrRepoDir}"/>
         
-        <!-- Call ABE - ABE writes directly to build.output.dir (no /IS subdirectory) -->
-        <!-- Set build.output.dir to the FBR repository directory where we want artifacts -->
+        <!-- Call ABE - target creates FBR structure, build.output.dir writes compiled assets -->
         <exec executable="${config.build.abeHome}/bin/build.bat"
               dir="${config.build.abeHome}"
               failonerror="true"
               osfamily="windows">
             <arg value="-Dsource=${isPackagesDir}"/>
-            <arg value="-Dtarget=${config.build.buildStorageDir}"/>
+            <arg value="-Dtarget=${fbrRepoDir}"/>
             <arg value="-Dproject.name=${bda.projectName}"/>
-            <arg value="-Dbuild.output.dir=${fbrRepoDir}"/>
         </exec>
         
         <exec executable="${config.build.abeHome}/bin/build.sh"
@@ -65,9 +63,8 @@
               failonerror="true"
               osfamily="unix">
             <arg value="-Dsource=${isPackagesDir}"/>
-            <arg value="-Dtarget=${config.build.buildStorageDir}"/>
+            <arg value="-Dtarget=${fbrRepoDir}"/>
             <arg value="-Dproject.name=${bda.projectName}"/>
-            <arg value="-Dbuild.output.dir=${fbrRepoDir}"/>
         </exec>
         
         <echo message="ABE build execution completed"/>
