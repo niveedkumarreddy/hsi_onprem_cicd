@@ -31,15 +31,6 @@
 name: webMethods Multi-Server CI/CD Pipeline
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'application/packages/**'
-      - 'application/tests/**'
-      - 'framework/cicd/**'
-      - 'framework/deployer/**'
-  pull_request:
-    branches: [main]
   workflow_dispatch:
     inputs:
       environment:
