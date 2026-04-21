@@ -80,7 +80,7 @@ jobs:
             "-Dsonar.token=$env:SONAR_TOKEN",
             "-Dsonar.scm.provider=git",
             "-Dsonar.projectVersion=${{ github.run_number }}",
-            "-Dsonar.exclusions=**/node.idf,**/node.ndf",
+            "-Dsonar.exclusions=**/node.idf,**/node.ndf,**/*.java",
             "-Dsonar.lang.patterns.xml=**/*.xsd,**/*.xsl,**/build*.xml,**/pom.xml",
             "-Dsonar.lang.patterns.flow=**/flow.xml,**/*.ndf"
           )
