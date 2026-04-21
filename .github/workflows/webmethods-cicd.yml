@@ -1,3 +1,33 @@
+# webMethods Multi-Server CI/CD Pipeline
+#
+# Purpose: Automated build, test, and deployment pipeline for webMethods Integration Server
+#
+# Required GitHub Secrets:
+#   - SONAR_TOKEN: SonarQube authentication token
+#   - SONAR_HOST_URL: SonarQube server URL
+#   - DEPLOYER_HOST: Deployer server hostname
+#   - DEPLOYER_PORT: Deployer server port (default: 5555)
+#   - DEPLOYER_USERNAME: Deployer admin username
+#   - DEPLOYER_PASSWORD: Deployer admin password
+#
+# Required GitHub Variables:
+#   - SAG_HOME: Software AG installation directory
+#   - JAVA_HOME: Java installation directory
+#   - PROJECT_NAME: Project identifier
+#   - DEV_SERVER_URL: DEV environment server URL
+#   - TEST_SERVER_URL: TEST environment server URL
+#   - PROD_SERVER_URL: PROD environment server URL
+#
+# Deployment Flow:
+#   1. Build: Compile packages using ABE
+#   2. Code Quality: SonarQube analysis with quality gate
+#   3. Deploy DEV: Single server deployment
+#   4. Test DEV: Run integration tests
+#   5. Deploy TEST: 3-server deployment (test1, test2, test3)
+#   6. Test TEST: Run integration tests
+#   7. Deploy PROD: 3-server deployment (prod1, prod2, prod3)
+#   8. Release: Create GitHub release tag
+
 name: webMethods Multi-Server CI/CD Pipeline
 
 on:
@@ -70,7 +100,8 @@ jobs:
           if (Test-Path "$env:SAG_HOME/common/AssetBuildEnvironment") {
             Get-ChildItem "$env:SAG_HOME/common/AssetBuildEnvironment"
           } else {
-            Write-Host "ABE not found!"
+            Write-Error "ABE not found at $env:SAG_HOME/common/AssetBuildEnvironment"
+            exit 1
           }
       
       - name: Prepare Build Properties
@@ -98,8 +129,8 @@ jobs:
           # ABE Configuration
           config.build.abeHome=$SAG_HOME_UNIX/common/AssetBuildEnvironment
           
-          # ABE Output Directory (ABE uses hardcoded location)
-          abe.output.dir=$WORKSPACE/../implementation/build/IS
+          # ABE Output Directory (ABE writes IS artifacts to IS subdirectory)
+          abe.output.dir=$WORKSPACE/build/IS
           "@ | Out-File -FilePath framework/build.properties -Encoding UTF8
           
           Write-Host "Build properties created at: framework/build.properties"
@@ -421,7 +452,7 @@ jobs:
     if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     environment:
       name: DEV
-      url: https://dev-server.company.com:5555
+      url: ${{ vars.DEV_SERVER_URL || 'https://dev-server.company.com:5555' }}
     
     steps:
       - name: Checkout Source Code
@@ -434,6 +465,25 @@ jobs:
         with:
           name: build-artifacts-${{ github.run_number }}
           path: .
+      
+      - name: Validate Required Secrets
+        shell: powershell
+        env:
+          DEPLOYER_HOST: ${{ secrets.DEPLOYER_HOST }}
+          DEPLOYER_USERNAME: ${{ secrets.DEPLOYER_USERNAME }}
+          DEPLOYER_PASSWORD: ${{ secrets.DEPLOYER_PASSWORD }}
+        run: |
+          $errors = @()
+          if (-not $env:DEPLOYER_HOST) { $errors += "DEPLOYER_HOST" }
+          if (-not $env:DEPLOYER_USERNAME) { $errors += "DEPLOYER_USERNAME" }
+          if (-not $env:DEPLOYER_PASSWORD) { $errors += "DEPLOYER_PASSWORD" }
+          
+          if ($errors.Count -gt 0) {
+            Write-Error "Missing required secrets: $($errors -join ', ')"
+            Write-Error "Please configure these secrets in GitHub repository settings"
+            exit 1
+          }
+          Write-Host "✅ All required secrets are configured"
       
       - name: Prepare Deployment Configuration
         shell: powershell
@@ -465,7 +515,7 @@ jobs:
           
           # Variable Substitution
           config.deployer.doVarSub=true
-          varsubDir=${{ github.workspace }}/application/varsub
+          varsubDir=$WORKSPACE/application/varsub
           config.deployer.splitDeploymentSets=false
           
           # Temp Directory
@@ -496,7 +546,8 @@ jobs:
       - name: Verify Deployment
         shell: powershell
         run: |
-          Write-Host "Verifying deployment on dev-server.company.com:5555..."
+          $devUrl = "${{ vars.DEV_SERVER_URL || 'dev-server.company.com:5555' }}"
+          Write-Host "Verifying deployment on $devUrl..."
           "Deployment verification completed" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
 
   test-dev:
@@ -506,6 +557,7 @@ jobs:
     if: github.event.inputs.skip_tests != 'true'
     
     steps:
+      # Note: Test jobs only need source code (test definitions), not build artifacts
       - name: Checkout Source Code
         uses: actions/checkout@v4
       
@@ -557,7 +609,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
     environment:
       name: TEST
-      url: https://test1-server.company.com:5555
+      url: ${{ vars.TEST_SERVER_URL || 'https://test1-server.company.com:5555' }}
     strategy:
       matrix:
         server: [test1, test2, test3]
@@ -569,6 +621,24 @@ jobs:
         uses: actions/checkout@v4
         with:
           clean: false
+      
+      - name: Validate Required Secrets
+        shell: powershell
+        env:
+          DEPLOYER_HOST: ${{ secrets.DEPLOYER_HOST }}
+          DEPLOYER_USERNAME: ${{ secrets.DEPLOYER_USERNAME }}
+          DEPLOYER_PASSWORD: ${{ secrets.DEPLOYER_PASSWORD }}
+        run: |
+          $errors = @()
+          if (-not $env:DEPLOYER_HOST) { $errors += "DEPLOYER_HOST" }
+          if (-not $env:DEPLOYER_USERNAME) { $errors += "DEPLOYER_USERNAME" }
+          if (-not $env:DEPLOYER_PASSWORD) { $errors += "DEPLOYER_PASSWORD" }
+          
+          if ($errors.Count -gt 0) {
+            Write-Error "Missing required secrets: $($errors -join ', ')"
+            exit 1
+          }
+          Write-Host "✅ All required secrets are configured"
       
       - name: Download Build Artifacts
         uses: actions/download-artifact@v4
@@ -613,7 +683,8 @@ jobs:
           "@ | Out-File -FilePath framework/deploy-test-${{ matrix.server }}.properties -Encoding UTF8
           
           Set-Location $env:CICD_HOME
-          Write-Host "Deploying to ${{ matrix.server }}-server.company.com:5555..."
+          $testUrl = "${{ vars.TEST_SERVER_URL || 'test-server.company.com:5555' }}"
+          Write-Host "Deploying to ${{ matrix.server }}.$testUrl..."
           
           ant -f build.xml deploy `
             "-Dproject.properties=${{ github.workspace }}/framework/deploy-test-${{ matrix.server }}.properties" `
@@ -628,6 +699,7 @@ jobs:
     if: github.event.inputs.skip_tests != 'true'
     
     steps:
+      # Note: Test jobs only need source code (test definitions), not build artifacts
       - name: Checkout Source Code
         uses: actions/checkout@v4
       
@@ -670,7 +742,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
     environment:
       name: PROD
-      url: https://prod1-server.company.com:5555
+      url: ${{ vars.PROD_SERVER_URL || 'https://prod1-server.company.com:5555' }}
     strategy:
       matrix:
         server: [prod1, prod2, prod3]
@@ -683,6 +755,24 @@ jobs:
         with:
           clean: false
       
+      - name: Validate Required Secrets
+        shell: powershell
+        env:
+          DEPLOYER_HOST: ${{ secrets.DEPLOYER_HOST }}
+          DEPLOYER_USERNAME: ${{ secrets.DEPLOYER_USERNAME }}
+          DEPLOYER_PASSWORD: ${{ secrets.DEPLOYER_PASSWORD }}
+        run: |
+          $errors = @()
+          if (-not $env:DEPLOYER_HOST) { $errors += "DEPLOYER_HOST" }
+          if (-not $env:DEPLOYER_USERNAME) { $errors += "DEPLOYER_USERNAME" }
+          if (-not $env:DEPLOYER_PASSWORD) { $errors += "DEPLOYER_PASSWORD" }
+          
+          if ($errors.Count -gt 0) {
+            Write-Error "Missing required secrets: $($errors -join ', ')"
+            exit 1
+          }
+          Write-Host "✅ All required secrets are configured"
+      
       - name: Download Build Artifacts
         uses: actions/download-artifact@v4
         with:
@@ -692,7 +782,8 @@ jobs:
       - name: Pre-Deployment Backup
         shell: powershell
         run: |
-          Write-Host "Creating backup of ${{ matrix.server }}-server.company.com..."
+          $prodUrl = "${{ vars.PROD_SERVER_URL || 'prod-server.company.com' }}"
+          Write-Host "Creating backup of ${{ matrix.server }}.$prodUrl..."
           "Backup completed for PROD-${{ matrix.server }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
       
       - name: Deploy to PROD-${{ matrix.server }}
@@ -724,7 +815,7 @@ jobs:
           
           # Variable Substitution
           config.deployer.doVarSub=true
-          varsubDir=$WORKSPACE/varsub
+          varsubDir=$WORKSPACE/application/varsub
           config.deployer.splitDeploymentSets=false
           
           # Temp Directory
@@ -732,7 +823,8 @@ jobs:
           "@ | Out-File -FilePath framework/deploy-prod-${{ matrix.server }}.properties -Encoding UTF8
           
           Set-Location $env:CICD_HOME
-          Write-Host "Deploying to ${{ matrix.server }}-server.company.com:5555..."
+          $prodUrl = "${{ vars.PROD_SERVER_URL || 'prod-server.company.com:5555' }}"
+          Write-Host "Deploying to ${{ matrix.server }}.$prodUrl..."
           
           ant -f build.xml deploy `
             "-Dproject.properties=${{ github.workspace }}/framework/deploy-prod-${{ matrix.server }}.properties" `
@@ -743,7 +835,8 @@ jobs:
       - name: Post-Deployment Verification
         shell: powershell
         run: |
-          Write-Host "Verifying deployment on ${{ matrix.server }}-server.company.com..."
+          $prodUrl = "${{ vars.PROD_SERVER_URL || 'prod-server.company.com' }}"
+          Write-Host "Verifying deployment on ${{ matrix.server }}.$prodUrl..."
           "Verification completed for PROD-${{ matrix.server }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
       
       - name: Wait Between Servers
@@ -761,12 +854,10 @@ jobs:
     
     steps:
       - name: Create Release Tag
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ github.run_number }}
-          release_name: Production Release ${{ github.run_number }}
+          name: Production Release ${{ github.run_number }}
           body: |
             ## Production Deployment Completed
             
@@ -782,9 +873,9 @@ jobs:
             - AS400 Adapter connections
             
             ### Environments
-            - ✅ DEV: dev-server.company.com
-            - ✅ TEST: test1/test2/test3-server.company.com
-            - ✅ PROD: prod1/prod2/prod3-server.company.com
+            - ✅ DEV: ${{ vars.DEV_SERVER_URL || 'dev-server.company.com' }}
+            - ✅ TEST: ${{ vars.TEST_SERVER_URL || 'test-server.company.com' }}
+            - ✅ PROD: ${{ vars.PROD_SERVER_URL || 'prod-server.company.com' }}
           draft: false
           prerelease: false
 
