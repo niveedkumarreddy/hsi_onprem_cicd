@@ -119,6 +119,16 @@ jobs:
           
           # ABE Configuration
           config.build.abeHome=$SAG_HOME_UNIX/common/AssetBuildEnvironment
+          
+          # ABE Internal Properties (required by ABE's build.properties)
+          buildOutputDir=$WORKSPACE/tmp/fbr/$env:PROJECT_NAME`_${{ github.run_number }}
+          isProjectsDir=$WORKSPACE/application/packages
+          isConfigDir=
+          bpmProjectsDir=
+          mwsProjectsDir=
+          rulesProjectsDir=
+          umProjectsDir=
+          SAGHome=$SAG_HOME_UNIX
           "@ | Out-File -FilePath framework/build.properties -Encoding UTF8
           
           Write-Host "Build properties created at: framework/build.properties"
