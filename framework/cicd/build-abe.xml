@@ -48,14 +48,13 @@
         <echo message="Building packages from: ${isPackagesDir}"/>
         <echo message="Target FBR directory: ${fbrRepoDir}"/>
         
-        <!-- Call ABE with build.output.dir override to control where ACDL files are written -->
+        <!-- Call ABE - it will write to its hardcoded location, we'll copy files after -->
         <exec executable="${config.build.abeHome}/bin/build.bat"
               dir="${config.build.abeHome}"
               failonerror="true"
               osfamily="windows">
             <arg value="-Dsource=${isPackagesDir}"/>
             <arg value="-Dtarget=${fbrRepoDir}"/>
-            <arg value="-Dbuild.output.dir=${fbrRepoDir}"/>
             <arg value="-Dproject.name=${bda.projectName}"/>
         </exec>
         
@@ -65,17 +64,24 @@
               osfamily="unix">
             <arg value="-Dsource=${isPackagesDir}"/>
             <arg value="-Dtarget=${fbrRepoDir}"/>
-            <arg value="-Dbuild.output.dir=${fbrRepoDir}"/>
             <arg value="-Dproject.name=${bda.projectName}"/>
         </exec>
         
         <echo message="ABE build execution completed"/>
         
+        <!-- ABE writes ACDL files to hardcoded location, copy them to FBR directory -->
+        <echo message="Copying ACDL files from ABE output to FBR directory..."/>
+        <copy todir="${fbrRepoDir}" overwrite="true" verbose="true">
+            <fileset dir="${buildOutputDir}">
+                <include name="**/*"/>
+            </fileset>
+        </copy>
+        
         <!-- Verify artifacts were created in FBR directory -->
         <available file="${fbrRepoDir}/_index" property="abe.output.exists"/>
         <fail unless="abe.output.exists" message="ABE output not found at: ${fbrRepoDir} (missing _index file)"/>
         
-        <echo message="ABE artifacts successfully created in: ${fbrRepoDir}"/>
+        <echo message="ABE artifacts successfully copied to: ${fbrRepoDir}"/>
     </target>
     
     <!-- Verify build output -->
