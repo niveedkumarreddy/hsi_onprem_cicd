@@ -48,7 +48,7 @@
         <echo message="Building packages from: ${isPackagesDir}"/>
         <echo message="Output directory: ${fbrRepoDir}"/>
         
-        <!-- Call ABE -->
+        <!-- Call ABE - it outputs to its own IS subdirectory by default -->
         <exec executable="${config.build.abeHome}/bin/build.bat"
               dir="${config.build.abeHome}"
               failonerror="true"
@@ -56,7 +56,6 @@
             <arg value="-Dsource=${isPackagesDir}"/>
             <arg value="-Dtarget=${config.build.buildStorageDir}"/>
             <arg value="-Dproject.name=${bda.projectName}"/>
-            <arg value="-Dbuild.output.dir=${build.output.dir}"/>
         </exec>
         
         <exec executable="${config.build.abeHome}/bin/build.sh"
@@ -66,24 +65,22 @@
             <arg value="-Dsource=${isPackagesDir}"/>
             <arg value="-Dtarget=${config.build.buildStorageDir}"/>
             <arg value="-Dproject.name=${bda.projectName}"/>
-            <arg value="-Dbuild.output.dir=${build.output.dir}"/>
         </exec>
         
         <echo message="ABE build execution completed"/>
         
-        <!-- ABE uses its own default output directory, copy to FBR location -->
-        <!-- ABE output location must be provided via abe.output.dir property -->
-        <fail unless="abe.output.dir" message="Property 'abe.output.dir' must be set to ABE's output directory"/>
+        <!-- ABE outputs to its installation directory/IS by default -->
+        <property name="abe.default.output" value="${config.build.abeHome}/IS"/>
         
         <echo message="Copying ABE output to FBR directory..."/>
-        <echo message="Source: ${abe.output.dir}"/>
+        <echo message="Source: ${abe.default.output}"/>
         <echo message="Target: ${fbrRepoDir}"/>
         
-        <available file="${abe.output.dir}" type="dir" property="abe.output.exists"/>
-        <fail unless="abe.output.exists" message="ABE output not found at: ${abe.output.dir}"/>
+        <available file="${abe.default.output}" type="dir" property="abe.output.exists"/>
+        <fail unless="abe.output.exists" message="ABE output not found at: ${abe.default.output}"/>
         
         <copy todir="${fbrRepoDir}" failonerror="true">
-            <fileset dir="${abe.output.dir}">
+            <fileset dir="${abe.default.output}">
                 <include name="**/*"/>
             </fileset>
         </copy>

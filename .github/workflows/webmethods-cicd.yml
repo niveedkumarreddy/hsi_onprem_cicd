@@ -128,10 +128,6 @@ jobs:
           
           # ABE Configuration
           config.build.abeHome=$SAG_HOME_UNIX/common/AssetBuildEnvironment
-          
-          # ABE Output Directory (ABE writes IS artifacts here)
-          build.output.dir=$WORKSPACE/build
-          abe.output.dir=$WORKSPACE/build/IS
           "@ | Out-File -FilePath framework/build.properties -Encoding UTF8
           
           Write-Host "Build properties created at: framework/build.properties"
