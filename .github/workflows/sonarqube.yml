@@ -82,7 +82,7 @@ jobs:
             "-Dsonar.projectVersion=${{ github.run_number }}",
             "-Dsonar.exclusions=**/node.idf,**/node.ndf,**/*.java",
             "-Dsonar.lang.patterns.xml=**/*.xsd,**/*.xsl,**/build*.xml,**/pom.xml",
-            "-Dsonar.lang.patterns.flow=**/flow.xml,**/*.ndf"
+            "-Dsonar.flow.file.suffixes=.ndf"
           )
           
           Write-Host "Running SonarQube analysis (Community Edition mode)..."

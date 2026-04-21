@@ -97,6 +97,9 @@ jobs:
           
           # ABE Configuration
           config.build.abeHome=$SAG_HOME_UNIX/common/AssetBuildEnvironment
+          
+          # ABE Output Directory (ABE uses hardcoded location)
+          abe.output.dir=$WORKSPACE/../implementation/build/IS
           "@ | Out-File -FilePath framework/build.properties -Encoding UTF8
           
           Write-Host "Build properties created at: framework/build.properties"
@@ -240,7 +243,7 @@ jobs:
             "-Dsonar.projectVersion=${{ github.run_number }}",
             "-Dsonar.exclusions=**/node.idf,**/node.ndf,**/*.java",
             "-Dsonar.lang.patterns.xml=**/*.xsd,**/*.xsl,**/build*.xml,**/pom.xml",
-            "-Dsonar.lang.patterns.flow=**/flow.xml,**/*.ndf"
+            "-Dsonar.flow.file.suffixes=.ndf"
           )
           
           Write-Host "Running SonarQube analysis (Community Edition mode)..."

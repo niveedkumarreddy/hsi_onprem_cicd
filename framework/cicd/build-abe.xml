@@ -69,8 +69,24 @@
         
         <echo message="ABE build execution completed"/>
         
-        <!-- ABE output is already in the correct location -->
-        <echo message="ABE output location: ${fbrRepoDir}"/>
+        <!-- ABE uses its own default output directory, copy to FBR location -->
+        <!-- ABE output location must be provided via abe.output.dir property -->
+        <fail unless="abe.output.dir" message="Property 'abe.output.dir' must be set to ABE's output directory"/>
+        
+        <echo message="Copying ABE output to FBR directory..."/>
+        <echo message="Source: ${abe.output.dir}"/>
+        <echo message="Target: ${fbrRepoDir}"/>
+        
+        <available file="${abe.output.dir}" type="dir" property="abe.output.exists"/>
+        <fail unless="abe.output.exists" message="ABE output not found at: ${abe.output.dir}"/>
+        
+        <copy todir="${fbrRepoDir}" failonerror="true">
+            <fileset dir="${abe.output.dir}">
+                <include name="**/*"/>
+            </fileset>
+        </copy>
+        
+        <echo message="Artifacts copied successfully to: ${fbrRepoDir}"/>
     </target>
     
     <!-- Verify build output -->
