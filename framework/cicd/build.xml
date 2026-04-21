@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project name="webMethods-CICD" default="buildDeployTest" basedir="..">
+<project name="webMethods-CICD" default="buildDeployTest" basedir=".."
+         xmlns:if="ant:if">
     
     <!-- Load properties files in order - command-line -D has highest precedence -->
     <!-- 1. Load standard SAG DevOps build.properties (reference) -->
@@ -10,6 +11,8 @@
     
     <!-- 3. Load workflow-generated properties if specified via -Dproject.properties=filename -->
     <!-- Note: This is optional and only loads if the property is set via command line -->
+    <!-- The property must be set via -D on command line, then this loads the file -->
+    <property file="${project.properties}" if:set="project.properties"/>
     
     <property name="cicd.home" value="${basedir}/cicd"/>
     

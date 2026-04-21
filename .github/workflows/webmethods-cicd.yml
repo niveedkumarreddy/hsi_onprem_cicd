@@ -426,10 +426,10 @@ jobs:
           
           # Temp Directory
           config.tmpdir=tmp
-          "@ | Out-File -FilePath deploy.properties -Encoding UTF8
+          "@ | Out-File -FilePath framework/deploy.properties -Encoding UTF8
           
           Write-Host "Deployment configuration:"
-          Get-Content deploy.properties
+          Get-Content framework/deploy.properties
       
       - name: Deploy to DEV Server
         shell: powershell
@@ -444,7 +444,7 @@ jobs:
           Write-Host "Starting deployment to DEV..."
           
           ant -f build.xml deploy `
-            "-Dproject.properties=deploy.properties" `
+            "-Dproject.properties=${{ github.workspace }}/framework/deploy.properties" `
             -verbose
           
           "✅ Deployment to DEV completed" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
@@ -477,7 +477,7 @@ jobs:
           config.test.reportDir=$WORKSPACE/report
           config.test.failBuildOnTestError=true
           config.build.abeHome=$env:SAG_HOME/common/AssetBuildEnvironment
-          "@ | Out-File -FilePath test.properties -Encoding UTF8
+          "@ | Out-File -FilePath framework/test.properties -Encoding UTF8
       
       - name: Run WmTestSuite Tests
         shell: powershell
@@ -486,7 +486,7 @@ jobs:
           Write-Host "Running tests on DEV environment..."
           
           ant -f build.xml test `
-            -Dproject.properties="${{ github.workspace }}/test.properties" `
+            -Dproject.properties="${{ github.workspace }}/framework/test.properties" `
             -verbose
           if ($LASTEXITCODE -ne 0) { Write-Host "Some tests failed" }
       
@@ -566,13 +566,13 @@ jobs:
           
           # Temp Directory
           config.tmpdir=tmp
-          "@ | Out-File -FilePath deploy-test-${{ matrix.server }}.properties -Encoding UTF8
+          "@ | Out-File -FilePath framework/deploy-test-${{ matrix.server }}.properties -Encoding UTF8
           
           Set-Location $env:CICD_HOME
           Write-Host "Deploying to ${{ matrix.server }}-server.company.com:5555..."
           
           ant -f build.xml deploy `
-            "-Dproject.properties=deploy-test-${{ matrix.server }}.properties" `
+            "-Dproject.properties=${{ github.workspace }}/framework/deploy-test-${{ matrix.server }}.properties" `
             -verbose
           
           "✅ Deployed to TEST-${{ matrix.server }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
@@ -599,11 +599,11 @@ jobs:
           config.test.reportDir=$WORKSPACE/report
           config.test.failBuildOnTestError=true
           config.build.abeHome=$env:SAG_HOME/common/AssetBuildEnvironment
-          "@ | Out-File -FilePath test-test.properties -Encoding UTF8
+          "@ | Out-File -FilePath framework/test-test.properties -Encoding UTF8
           
           Set-Location $env:CICD_HOME
           ant -f build.xml test `
-            -Dproject.properties="${{ github.workspace }}/test-test.properties"
+            -Dproject.properties="${{ github.workspace }}/framework/test-test.properties"
       
       - name: Publish Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
@@ -685,13 +685,13 @@ jobs:
           
           # Temp Directory
           config.tmpdir=tmp
-          "@ | Out-File -FilePath deploy-prod-${{ matrix.server }}.properties -Encoding UTF8
+          "@ | Out-File -FilePath framework/deploy-prod-${{ matrix.server }}.properties -Encoding UTF8
           
           Set-Location $env:CICD_HOME
           Write-Host "Deploying to ${{ matrix.server }}-server.company.com:5555..."
           
           ant -f build.xml deploy `
-            "-Dproject.properties=deploy-prod-${{ matrix.server }}.properties" `
+            "-Dproject.properties=${{ github.workspace }}/framework/deploy-prod-${{ matrix.server }}.properties" `
             -verbose
           
           "✅ Deployed to PROD-${{ matrix.server }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append

@@ -139,13 +139,13 @@ jobs:
           
           # Temp Directory
           config.tmpdir=tmp
-          "@ | Out-File -FilePath rollback-test-${{ matrix.server }}.properties -Encoding UTF8
+          "@ | Out-File -FilePath framework/rollback-test-${{ matrix.server }}.properties -Encoding UTF8
           
           Set-Location $env:CICD_HOME
           Write-Host "Rolling back ${{ matrix.server }}-server.company.com to build ${{ github.event.inputs.build_number }}..."
           
           ant -f build.xml deploy `
-            -Dproject.properties="${{ github.workspace }}/rollback-test-${{ matrix.server }}.properties" `
+            -Dproject.properties="${{ github.workspace }}/framework/rollback-test-${{ matrix.server }}.properties" `
             -verbose
           
           "✅ Rolled back TEST-${{ matrix.server }} to build ${{ github.event.inputs.build_number }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
