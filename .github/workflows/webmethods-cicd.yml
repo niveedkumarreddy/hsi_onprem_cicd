@@ -97,10 +97,10 @@ jobs:
           
           # ABE Configuration
           config.build.abeHome=$SAG_HOME_UNIX/common/AssetBuildEnvironment
-          "@ | Out-File -FilePath build.properties -Encoding UTF8
+          "@ | Out-File -FilePath framework/build.properties -Encoding UTF8
           
-          Write-Host "Build properties created:"
-          Get-Content build.properties
+          Write-Host "Build properties created at: framework/build.properties"
+          Get-Content framework/build.properties
       
       - name: Build with Asset Build Environment
         shell: powershell
