@@ -48,9 +48,8 @@
         <echo message="Building packages from: ${isPackagesDir}"/>
         <echo message="Output directory: ${fbrRepoDir}"/>
         
-        <!-- Call ABE - specify build.output.dir (ABE creates /IS subdirectory inside it) -->
-        <property name="abe.build.output" value="${config.build.buildStorageDir}"/>
-        
+        <!-- Call ABE - ABE writes directly to build.output.dir (no /IS subdirectory) -->
+        <!-- Set build.output.dir to the FBR repository directory where we want artifacts -->
         <exec executable="${config.build.abeHome}/bin/build.bat"
               dir="${config.build.abeHome}"
               failonerror="true"
@@ -58,7 +57,7 @@
             <arg value="-Dsource=${isPackagesDir}"/>
             <arg value="-Dtarget=${config.build.buildStorageDir}"/>
             <arg value="-Dproject.name=${bda.projectName}"/>
-            <arg value="-Dbuild.output.dir=${abe.build.output}"/>
+            <arg value="-Dbuild.output.dir=${fbrRepoDir}"/>
         </exec>
         
         <exec executable="${config.build.abeHome}/bin/build.sh"
@@ -68,26 +67,15 @@
             <arg value="-Dsource=${isPackagesDir}"/>
             <arg value="-Dtarget=${config.build.buildStorageDir}"/>
             <arg value="-Dproject.name=${bda.projectName}"/>
-            <arg value="-Dbuild.output.dir=${abe.build.output}"/>
+            <arg value="-Dbuild.output.dir=${fbrRepoDir}"/>
         </exec>
         
         <echo message="ABE build execution completed"/>
+        <echo message="ABE artifacts written to: ${fbrRepoDir}"/>
         
-        <!-- ABE creates IS subdirectory inside build.output.dir -->
-        <property name="abe.output.location" value="${abe.build.output}/IS"/>
-        
-        <echo message="Copying ABE output to FBR directory..."/>
-        <echo message="Source: ${abe.output.location}"/>
-        <echo message="Target: ${fbrRepoDir}"/>
-        
-        <available file="${abe.output.location}" type="dir" property="abe.output.exists"/>
-        <fail unless="abe.output.exists" message="ABE output not found at: ${abe.output.location}"/>
-        
-        <copy todir="${fbrRepoDir}" failonerror="true">
-            <fileset dir="${abe.output.location}">
-                <include name="**/*"/>
-            </fileset>
-        </copy>
+        <!-- Verify artifacts were created -->
+        <available file="${fbrRepoDir}/_index" property="abe.output.exists"/>
+        <fail unless="abe.output.exists" message="ABE output not found at: ${fbrRepoDir} (missing _index file)"/>
         
         <echo message="Artifacts copied successfully to: ${fbrRepoDir}"/>
     </target>
