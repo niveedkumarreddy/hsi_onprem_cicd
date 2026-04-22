@@ -63,22 +63,24 @@
     <target name="test.executeTests">
         <echo message="=== Executing Tests on ${test.server.host}:${test.server.port} ==="/>
         
-        <!-- Get list of test files -->
-        <fileset id="test.files" dir="${isTestDir}">
-            <include name="*/setup/*.xml"/>
-        </fileset>
-        
-        <!-- Convert fileset to property for iteration -->
-        <pathconvert property="test.files.list" refid="test.files" pathsep="${line.separator}"/>
-        
-        <!-- Execute each test file -->
-        <for param="test.file" list="${test.files.list}" delimiter="${line.separator}">
-            <sequential>
-                <antcall target="test.runSingleTest">
-                    <param name="test.file" value="@{test.file}"/>
-                </antcall>
-            </sequential>
-        </for>
+        <!-- Use apply task to iterate through test files -->
+        <apply executable="cmd"
+               dir="${basedir}"
+               parallel="false"
+               failonerror="false"
+               relative="false"
+               forwardslash="true">
+            <arg value="/c"/>
+            <arg value="ant"/>
+            <arg value="-f"/>
+            <arg value="${cicd.home}/build.xml"/>
+            <arg value="-Dtest.file="/>
+            <arg value="test.runSingleTest"/>
+            <fileset dir="${isTestDir}">
+                <include name="*/setup/*.xml"/>
+            </fileset>
+            <srcfile prefix="-Dtest.file="/>
+        </apply>
     </target>
     
     <!-- Run Single Test File -->
@@ -182,12 +184,6 @@ Report Directory: ${config.test.reportDir}
         <echo message="Test artifacts cleaned"/>
     </target>
     
-    <!-- Load ant-contrib for 'for' task -->
-    <taskdef resource="net/sf/antcontrib/antlib.xml">
-        <classpath>
-            <pathelement location="${env.SAG_HOME}/common/lib/ant-contrib.jar"/>
-        </classpath>
-    </taskdef>
     
 </project>
 
