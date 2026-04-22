@@ -337,14 +337,18 @@ jobs:
         run: |
           $WORKSPACE = "${{ github.workspace }}".Replace('\', '/')
           
-          @"
+          # Create properties without BOM
+          $content = @"
           bda.targetEnv=DEV
           bda.projectName=$env:PROJECT_NAME
           isTestDir=$WORKSPACE/application/tests
           config.test.reportDir=$WORKSPACE/report
           config.test.failBuildOnTestError=true
           config.build.abeHome=$env:SAG_HOME/common/AssetBuildEnvironment
-          "@ | Out-File -FilePath framework/build.properties -Encoding UTF8
+          "@
+          
+          # Write without BOM using ASCII encoding
+          [System.IO.File]::WriteAllText("$PWD/framework/build.properties", $content, [System.Text.Encoding]::ASCII)
           
           Write-Host "Test configuration created"
           Get-Content framework/build.properties
