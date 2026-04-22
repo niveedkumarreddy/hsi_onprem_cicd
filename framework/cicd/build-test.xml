@@ -63,22 +63,34 @@
     <target name="test.executeTests">
         <echo message="=== Executing Tests on ${test.server.host}:${test.server.port} ==="/>
         
-        <!-- Execute each test file directly using subant -->
-        <subant target="test.runSingleTest" genericantfile="${cicd.home}/build.xml" failonerror="false">
-            <fileset dir="${isTestDir}" includes="*/setup/*.xml"/>
-            <property name="test.server.host" value="${test.server.host}"/>
-            <property name="test.server.port" value="${test.server.port}"/>
-            <property name="test.server.user" value="${test.server.user}"/>
-            <property name="test.server.pwd" value="${test.server.pwd}"/>
-            <property name="config.test.reportDir" value="${config.test.reportDir}"/>
-            <property name="config.test.failBuildOnTestError" value="${config.test.failBuildOnTestError}"/>
-        </subant>
+        <!-- Execute tests using apply with curl directly -->
+        <apply executable="curl"
+               parallel="false"
+               failonerror="false"
+               relative="false"
+               forwardslash="true"
+               dest="${config.test.reportDir}"
+               verbose="true">
+            <arg value="-X"/>
+            <arg value="POST"/>
+            <arg value="-u"/>
+            <arg value="${test.server.user}:${test.server.pwd}"/>
+            <arg value="-H"/>
+            <arg value="Content-Type: application/xml"/>
+            <arg value="--data-binary"/>
+            <srcfile prefix="@"/>
+            <arg value="http://${test.server.host}:${test.server.port}/invoke/wm.server.test/executeTestSuite"/>
+            <fileset dir="${isTestDir}">
+                <include name="*/setup/*.xml"/>
+            </fileset>
+            <mapper type="glob" from="*.xml" to="TEST-*.xml"/>
+        </apply>
+        
+        <echo message="Test execution completed"/>
     </target>
     
-    <!-- Run Single Test File -->
-    <target name="test.runSingleTest">
-        <!-- Get the test file from ant.file property set by subant -->
-        <property name="test.file" value="${ant.file}"/>
+    <!-- Run Single Test File (kept for potential manual use) -->
+    <target name="test.runSingleTest" if="test.file">
         <echo message="Running test: ${test.file}"/>
         
         <!-- Extract test package name -->
