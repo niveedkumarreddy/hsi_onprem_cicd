@@ -80,11 +80,6 @@
             <DeploymentCandidate description="Deploy to @TARGET_ENV@"
                                 mapName="MainDeploymentMap"
                                 name="MainDeploymentCandidate"/>
-            
-            <!-- Build the deployment candidate -->
-            <Candidate description="Build deployment candidate for @TARGET_ENV@"
-                      mapName="MainDeploymentMap"
-                      name="MainDeploymentCandidate"/>
         </Project>
     </Projects>
 </DeployerSpec>

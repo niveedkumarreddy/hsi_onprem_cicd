@@ -2,7 +2,7 @@
 <project name="Deployer-Automation" basedir="..">
     
     <!-- Deployment Target -->
-    <target name="deployer.deploy" depends="deployer.init, deployer.generatePA, deployer.executePA, deployer.buildCandidate, deployer.executeDeploy, deployer.verify">
+    <target name="deployer.deploy" depends="deployer.init, deployer.generatePA, deployer.executePA, deployer.executeDeploy, deployer.verify">
         <echo message="Deployment completed successfully"/>
     </target>
     
