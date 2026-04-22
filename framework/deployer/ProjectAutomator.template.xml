@@ -81,7 +81,7 @@
             <DeploymentCandidate description="Deploy to @TARGET_ENV@"
                                 mapName="MainDeploymentMap"
                                 name="MainDeploymentCandidate">
-                <DeploymentSet>MainDeploymentSet</DeploymentSet>
+                <DeploymentSet srcAlias="@FBR_REPO_NAME@">MainDeploymentSet</DeploymentSet>
             </DeploymentCandidate>
         </Project>
     </Projects>
