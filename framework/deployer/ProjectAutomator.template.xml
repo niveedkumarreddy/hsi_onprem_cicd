@@ -77,15 +77,12 @@
             </MapSetMapping>
             
             <!-- Deployment Candidate (Deploy phase) -->
+            <!-- For Repository projects, the candidate is automatically built when defined -->
             <DeploymentCandidate description="Deploy to @TARGET_ENV@"
                                 mapName="MainDeploymentMap"
-                                name="MainDeploymentCandidate"/>
-            
-            <!-- Build Deployment Candidate -->
-            <Candidate description="Build deployment candidate for @TARGET_ENV@"
-                      name="MainDeploymentCandidate">
+                                name="MainDeploymentCandidate">
                 <DeploymentSet>MainDeploymentSet</DeploymentSet>
-            </Candidate>
+            </DeploymentCandidate>
         </Project>
     </Projects>
 </DeployerSpec>
