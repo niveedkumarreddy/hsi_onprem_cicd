@@ -2,7 +2,7 @@
 <project name="Deployer-Automation" basedir="..">
     
     <!-- Deployment Target -->
-    <target name="deployer.deploy" depends="deployer.init, deployer.generatePA, deployer.executePA, deployer.executeDeploy, deployer.verify">
+    <target name="deployer.deploy" depends="deployer.init, deployer.generatePA, deployer.executePA, deployer.buildCandidate, deployer.executeDeploy, deployer.verify">
         <echo message="Deployment completed successfully"/>
     </target>
     
@@ -98,6 +98,60 @@
         </fail>
         
         <echo message="Project Automator executed successfully"/>
+    </target>
+    
+    <!-- Build Deployment Candidate -->
+    <target name="deployer.buildCandidate">
+        <echo message="=== Building Deployment Candidate ==="/>
+        
+        <!-- Determine Deployer CLI executable -->
+        <condition property="deployer.exe" value="Deployer.bat" else="Deployer.sh">
+            <os family="windows"/>
+        </condition>
+        
+        <property name="deployer.full.path" value="${config.deployer.deployerInstallationPath}/${deployer.exe}"/>
+        <property name="deployer.build.log.file" value="${config.deployer.deployerInstallationPath}/../logs/Deployer_Build.log"/>
+        <property name="project.full.name" value="${PROJECT_PREFIX}_${bda.projectName}_${bda.buildNumber}"/>
+        
+        <echo message="Executing: ${deployer.full.path}"/>
+        <echo message="Project: ${project.full.name}"/>
+        <echo message="Candidate: MainDeploymentCandidate"/>
+        <echo message="Log: ${deployer.build.log.file}"/>
+        
+        <!-- Build the deployment candidate -->
+        <exec executable="${deployer.full.path}"
+              dir="${config.deployer.deployerInstallationPath}"
+              failonerror="false"
+              resultproperty="deployer.build.result"
+              output="${deployer.build.log.file}">
+            <arg value="--build"/>
+            <arg value="-project"/>
+            <arg value="${project.full.name}"/>
+            <arg value="-dc"/>
+            <arg value="MainDeploymentCandidate"/>
+            <arg value="-host"/>
+            <arg value="${config.deployer.deployerHost}"/>
+            <arg value="-port"/>
+            <arg value="${config.deployer.deployerPort}"/>
+            <arg value="-user"/>
+            <arg value="${config.deployer.deployerUsername}"/>
+            <arg value="-pwd"/>
+            <arg value="${config.deployer.deployerPassword}"/>
+        </exec>
+        
+        <!-- Check result -->
+        <condition property="deployer.build.success">
+            <equals arg1="${deployer.build.result}" arg2="0"/>
+        </condition>
+        
+        <fail unless="deployer.build.success">
+            <![CDATA[
+            Deployer build candidate failed with exit code: ${deployer.build.result}
+            Check log file: ${deployer.build.log.file}
+            ]]>
+        </fail>
+        
+        <echo message="Deployment candidate built successfully"/>
     </target>
     
     <!-- Deploy using Deployer CLI -->
