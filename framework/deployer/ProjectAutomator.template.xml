@@ -42,10 +42,10 @@
     </Environment>
     
     <!-- Deployment Projects -->
-    <Projects projectPrefix="@PROJECT_PREFIX@">
-        <Project description="Automated deployment for @TARGET_ENV@ - Build @BUILD_NUMBER@" 
-                 name="@PROJECT_NAME@_@BUILD_NUMBER@" 
-                 overwrite="true" 
+    <Projects>
+        <Project description="Automated deployment for @TARGET_ENV@ - Build @BUILD_NUMBER@"
+                 name="@PROJECT_PREFIX@_@PROJECT_NAME@_@BUILD_NUMBER@"
+                 overwrite="true"
                  type="Repository">
             
             <!-- Project Properties -->
