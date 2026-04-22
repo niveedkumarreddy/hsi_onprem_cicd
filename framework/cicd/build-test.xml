@@ -63,14 +63,22 @@
     <target name="test.executeTests">
         <echo message="=== Executing Tests on ${test.server.host}:${test.server.port} ==="/>
         
-        <!-- Iterate through test files -->
-        <foreach target="test.runSingleTest" param="test.file">
-            <path>
-                <fileset dir="${isTestDir}">
-                    <include name="*/setup/*.xml"/>
-                </fileset>
-            </path>
-        </foreach>
+        <!-- Get list of test files -->
+        <fileset id="test.files" dir="${isTestDir}">
+            <include name="*/setup/*.xml"/>
+        </fileset>
+        
+        <!-- Convert fileset to property for iteration -->
+        <pathconvert property="test.files.list" refid="test.files" pathsep="${line.separator}"/>
+        
+        <!-- Execute each test file -->
+        <for param="test.file" list="${test.files.list}" delimiter="${line.separator}">
+            <sequential>
+                <antcall target="test.runSingleTest">
+                    <param name="test.file" value="@{test.file}"/>
+                </antcall>
+            </sequential>
+        </for>
     </target>
     
     <!-- Run Single Test File -->
@@ -78,6 +86,14 @@
         <echo message="Running test: ${test.file}"/>
         
         <!-- Extract test package name -->
+        <local name="test.filename"/>
+        <local name="test.dirname"/>
+        <local name="test.package"/>
+        <local name="test.package.parent"/>
+        <local name="test.result.file"/>
+        <local name="test.exit.code"/>
+        <local name="test.failed"/>
+        
         <basename property="test.filename" file="${test.file}" suffix=".xml"/>
         <dirname property="test.dirname" file="${test.file}"/>
         <basename property="test.package" file="${test.dirname}"/>
@@ -166,31 +182,12 @@ Report Directory: ${config.test.reportDir}
         <echo message="Test artifacts cleaned"/>
     </target>
     
-    <!-- Macro for foreach (if ant-contrib not available) -->
-    <macrodef name="foreach">
-        <attribute name="target"/>
-        <attribute name="param"/>
-        <element name="path"/>
-        <sequential>
-            <script language="groovy">
-                <![CDATA[
-                def ant = new AntBuilder()
-                def pathElement = elements.get('path')
-                
-                pathElement.each { fileSet ->
-                    def ds = fileSet.getDirectoryScanner(project)
-                    ds.scan()
-                    ds.getIncludedFiles().each { file ->
-                        def fullPath = new File(ds.getBasedir(), file).getAbsolutePath()
-                        ant.antcall(target: attributes.get('target')) {
-                            param(name: attributes.get('param'), value: fullPath)
-                        }
-                    }
-                }
-                ]]>
-            </script>
-        </sequential>
-    </macrodef>
+    <!-- Load ant-contrib for 'for' task -->
+    <taskdef resource="net/sf/antcontrib/antlib.xml">
+        <classpath>
+            <pathelement location="${env.SAG_HOME}/common/lib/ant-contrib.jar"/>
+        </classpath>
+    </taskdef>
     
 </project>
 
