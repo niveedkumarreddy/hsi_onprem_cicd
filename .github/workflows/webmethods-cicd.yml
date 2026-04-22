@@ -340,11 +340,14 @@ jobs:
           @"
           bda.targetEnv=DEV
           bda.projectName=$env:PROJECT_NAME
-          isTestDir=$WORKSPACE/tests
+          isTestDir=$WORKSPACE/application/tests
           config.test.reportDir=$WORKSPACE/report
           config.test.failBuildOnTestError=true
           config.build.abeHome=$env:SAG_HOME/common/AssetBuildEnvironment
-          "@ | Out-File -FilePath framework/test.properties -Encoding UTF8
+          "@ | Out-File -FilePath framework/build.properties -Encoding UTF8
+          
+          Write-Host "Test configuration created"
+          Get-Content framework/build.properties
       
       - name: Run WmTestSuite Tests
         shell: powershell
@@ -352,16 +355,10 @@ jobs:
           # Add ANT to PATH
           $env:PATH = "$env:SAG_HOME/common/lib/ant/bin;$env:PATH"
           
-          # Convert path to forward slashes for ANT
-          $TEST_PROPS = "${{ github.workspace }}/framework/test.properties".Replace('\', '/')
-          
           Set-Location $env:CICD_HOME
           Write-Host "Running tests on DEV environment..."
-          Write-Host "Test properties: $TEST_PROPS"
           
-          ant -f build.xml test `
-            -Dproject.properties="$TEST_PROPS" `
-            -verbose
+          ant -f build.xml test -verbose
           if ($LASTEXITCODE -ne 0) { Write-Host "Some tests failed" }
       
       - name: Publish Test Results
