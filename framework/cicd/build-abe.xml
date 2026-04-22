@@ -48,7 +48,10 @@
         <echo message="Building packages from: ${isPackagesDir}"/>
         <echo message="Target FBR directory: ${fbrRepoDir}"/>
         
-        <!-- Call ABE - it will write to its hardcoded location, we'll copy files after -->
+        <!-- Define ABE's hardcoded output location -->
+        <property name="abe.hardcoded.output" value="C:/Users/NiveedKumarReddyBoll/Customer_Projects/Henry_Schen/implementation/build"/>
+        
+        <!-- Call ABE - it writes to hardcoded location and creates index files in target -->
         <exec executable="${config.build.abeHome}/bin/build.bat"
               dir="${config.build.abeHome}"
               failonerror="true"
@@ -69,19 +72,26 @@
         
         <echo message="ABE build execution completed"/>
         
-        <!-- ABE writes ACDL files to hardcoded location, copy them to FBR directory -->
-        <echo message="Copying ACDL files from ABE output to FBR directory..."/>
+        <!-- Verify ABE created ACDL files in hardcoded location -->
+        <available file="${abe.hardcoded.output}/IS" type="dir" property="abe.hardcoded.exists"/>
+        <fail unless="abe.hardcoded.exists" message="ABE did not create output at hardcoded location: ${abe.hardcoded.output}/IS"/>
+        
+        <!-- Copy ACDL files from ABE's hardcoded location to FBR directory -->
+        <echo message="Copying ACDL files from ${abe.hardcoded.output} to ${fbrRepoDir}"/>
         <copy todir="${fbrRepoDir}" overwrite="true" verbose="true">
-            <fileset dir="${buildOutputDir}">
-                <include name="**/*"/>
+            <fileset dir="${abe.hardcoded.output}">
+                <include name="**/*.acdl"/>
+                <include name="IS/**/*"/>
             </fileset>
         </copy>
         
-        <!-- Verify artifacts were created in FBR directory -->
-        <available file="${fbrRepoDir}/_index" property="abe.output.exists"/>
-        <fail unless="abe.output.exists" message="ABE output not found at: ${fbrRepoDir} (missing _index file)"/>
+        <!-- Verify final FBR directory has both index files and ACDL files -->
+        <available file="${fbrRepoDir}/_index" property="abe.index.exists"/>
+        <available file="${fbrRepoDir}/IS" type="dir" property="abe.is.exists"/>
+        <fail unless="abe.index.exists" message="Missing _index file in: ${fbrRepoDir}"/>
+        <fail unless="abe.is.exists" message="Missing IS directory in: ${fbrRepoDir}"/>
         
-        <echo message="ABE artifacts successfully copied to: ${fbrRepoDir}"/>
+        <echo message="ABE artifacts successfully assembled in: ${fbrRepoDir}"/>
     </target>
     
     <!-- Verify build output -->
