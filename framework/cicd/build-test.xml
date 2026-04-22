@@ -63,39 +63,25 @@
     <target name="test.executeTests">
         <echo message="=== Executing Tests on ${test.server.host}:${test.server.port} ==="/>
         
-        <!-- Use apply task to iterate through test files -->
-        <apply executable="cmd"
-               dir="${basedir}"
-               parallel="false"
-               failonerror="false"
-               relative="false"
-               forwardslash="true">
-            <arg value="/c"/>
-            <arg value="ant"/>
-            <arg value="-f"/>
-            <arg value="${cicd.home}/build.xml"/>
-            <arg value="-Dtest.file="/>
-            <arg value="test.runSingleTest"/>
-            <fileset dir="${isTestDir}">
-                <include name="*/setup/*.xml"/>
-            </fileset>
-            <srcfile prefix="-Dtest.file="/>
-        </apply>
+        <!-- Execute each test file directly using subant -->
+        <subant target="test.runSingleTest" genericantfile="${cicd.home}/build.xml" failonerror="false">
+            <fileset dir="${isTestDir}" includes="*/setup/*.xml"/>
+            <property name="test.server.host" value="${test.server.host}"/>
+            <property name="test.server.port" value="${test.server.port}"/>
+            <property name="test.server.user" value="${test.server.user}"/>
+            <property name="test.server.pwd" value="${test.server.pwd}"/>
+            <property name="config.test.reportDir" value="${config.test.reportDir}"/>
+            <property name="config.test.failBuildOnTestError" value="${config.test.failBuildOnTestError}"/>
+        </subant>
     </target>
     
     <!-- Run Single Test File -->
     <target name="test.runSingleTest">
+        <!-- Get the test file from ant.file property set by subant -->
+        <property name="test.file" value="${ant.file}"/>
         <echo message="Running test: ${test.file}"/>
         
         <!-- Extract test package name -->
-        <local name="test.filename"/>
-        <local name="test.dirname"/>
-        <local name="test.package"/>
-        <local name="test.package.parent"/>
-        <local name="test.result.file"/>
-        <local name="test.exit.code"/>
-        <local name="test.failed"/>
-        
         <basename property="test.filename" file="${test.file}" suffix=".xml"/>
         <dirname property="test.dirname" file="${test.file}"/>
         <basename property="test.package" file="${test.dirname}"/>
