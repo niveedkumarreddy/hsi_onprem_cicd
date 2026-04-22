@@ -349,6 +349,9 @@ jobs:
       - name: Run WmTestSuite Tests
         shell: powershell
         run: |
+          # Add ANT to PATH
+          $env:PATH = "$env:SAG_HOME/common/lib/ant/bin;$env:PATH"
+          
           Set-Location $env:CICD_HOME
           Write-Host "Running tests on DEV environment..."
           
