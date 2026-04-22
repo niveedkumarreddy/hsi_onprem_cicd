@@ -48,10 +48,19 @@
         <echo message="Building packages from: ${isPackagesDir}"/>
         <echo message="Target FBR directory: ${fbrRepoDir}"/>
         
-        <!-- Define ABE's hardcoded output location -->
-        <property name="abe.hardcoded.output" value="C:/Users/NiveedKumarReddyBoll/Customer_Projects/Henry_Schen/implementation/build"/>
+        <!-- Define ABE's hardcoded output location based on OS -->
+        <!-- Windows: Uses user.home from ANT -->
+        <condition property="abe.hardcoded.output" value="${user.home}/Customer_Projects/Henry_Schen/implementation/build">
+            <os family="windows"/>
+        </condition>
+        <!-- Unix/Linux: Uses user.home from ANT -->
+        <condition property="abe.hardcoded.output" value="${user.home}/Customer_Projects/Henry_Schen/implementation/build">
+            <os family="unix"/>
+        </condition>
         
-        <!-- Call ABE - it writes to hardcoded location and creates index files in target -->
+        <echo message="ABE hardcoded output location: ${abe.hardcoded.output}"/>
+        
+        <!-- Call ABE - it writes to hardcoded location regardless of -Dtarget parameter -->
         <exec executable="${config.build.abeHome}/bin/build.bat"
               dir="${config.build.abeHome}"
               failonerror="true"
@@ -72,25 +81,17 @@
         
         <echo message="ABE build execution completed"/>
         
-        <!-- Verify ABE created ACDL files in hardcoded location -->
+        <!-- Verify ABE created output in hardcoded location -->
         <available file="${abe.hardcoded.output}/IS" type="dir" property="abe.hardcoded.exists"/>
         <fail unless="abe.hardcoded.exists" message="ABE did not create output at hardcoded location: ${abe.hardcoded.output}/IS"/>
         
-        <!-- Copy ACDL files and assets from ABE's hardcoded location to FBR directory -->
-        <echo message="Copying ACDL files from ${abe.hardcoded.output} to ${fbrRepoDir}"/>
+        <!-- Copy all ABE output from hardcoded location to FBR directory -->
+        <echo message="Copying ABE artifacts from ${abe.hardcoded.output} to ${fbrRepoDir}"/>
         <copy todir="${fbrRepoDir}" overwrite="true" verbose="true">
             <fileset dir="${abe.hardcoded.output}">
-                <include name="**/*.acdl"/>
-                <include name="**/*.zip"/>
-                <include name="**/_assets.obj"/>
+                <!-- Copy entire IS directory structure (includes ACDL, ZIP, and _assets.obj) -->
                 <include name="IS/**/*"/>
-            </fileset>
-        </copy>
-        
-        <!-- ABE also creates index files in target directory, copy those too -->
-        <echo message="Copying index files from ${fbrRepoDir} (if they exist in parent)"/>
-        <copy todir="${fbrRepoDir}" overwrite="true" verbose="true" failonerror="false">
-            <fileset dir="${config.build.buildStorageDir}">
+                <!-- Copy root-level index files -->
                 <include name="_index"/>
                 <include name="_compositeIndex"/>
                 <include name="_assets.obj"/>
@@ -99,14 +100,26 @@
         
         <!-- Verify final FBR directory has required files -->
         <available file="${fbrRepoDir}/IS" type="dir" property="abe.is.exists"/>
+        <available file="${fbrRepoDir}/_index" type="file" property="abe.index.exists"/>
+        
         <fail unless="abe.is.exists" message="Missing IS directory in: ${fbrRepoDir}"/>
+        
+        <!-- Warn if _index is missing but don't fail - Deployer might still work -->
+        <condition property="index.missing">
+            <not><isset property="abe.index.exists"/></not>
+        </condition>
+        <echo message="WARNING: _index file not found in ${fbrRepoDir}. Deployment may fail." if:set="index.missing"/>
         
         <echo message="ABE artifacts successfully assembled in: ${fbrRepoDir}"/>
         <echo message="Contents:"/>
-        <exec executable="cmd" osfamily="windows">
+        <exec executable="cmd" osfamily="windows" failonerror="false">
             <arg value="/c"/>
             <arg value="dir"/>
             <arg value="/s"/>
+            <arg value="${fbrRepoDir}"/>
+        </exec>
+        <exec executable="ls" osfamily="unix" failonerror="false">
+            <arg value="-laR"/>
             <arg value="${fbrRepoDir}"/>
         </exec>
     </target>
