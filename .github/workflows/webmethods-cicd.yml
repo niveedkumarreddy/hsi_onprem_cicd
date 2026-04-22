@@ -352,11 +352,15 @@ jobs:
           # Add ANT to PATH
           $env:PATH = "$env:SAG_HOME/common/lib/ant/bin;$env:PATH"
           
+          # Convert path to forward slashes for ANT
+          $TEST_PROPS = "${{ github.workspace }}/framework/test.properties".Replace('\', '/')
+          
           Set-Location $env:CICD_HOME
           Write-Host "Running tests on DEV environment..."
+          Write-Host "Test properties: $TEST_PROPS"
           
           ant -f build.xml test `
-            -Dproject.properties="${{ github.workspace }}/framework/test.properties" `
+            -Dproject.properties="$TEST_PROPS" `
             -verbose
           if ($LASTEXITCODE -ne 0) { Write-Host "Some tests failed" }
       
