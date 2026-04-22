@@ -108,7 +108,7 @@
         <condition property="index.missing">
             <not><isset property="abe.index.exists"/></not>
         </condition>
-        <echo message="WARNING: _index file not found in ${fbrRepoDir}. Deployment may fail." if:set="index.missing"/>
+        <antcall target="abe.warn.missing.index"/>
         
         <echo message="ABE artifacts successfully assembled in: ${fbrRepoDir}"/>
         <echo message="Contents:"/>
@@ -122,6 +122,11 @@
             <arg value="-laR"/>
             <arg value="${fbrRepoDir}"/>
         </exec>
+    </target>
+    
+    <!-- Warning target for missing index file -->
+    <target name="abe.warn.missing.index" if="index.missing">
+        <echo message="WARNING: _index file not found in ${fbrRepoDir}. Deployment may fail."/>
     </target>
     
     <!-- Verify build output -->
